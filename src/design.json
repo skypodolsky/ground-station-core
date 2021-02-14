@@ -1,0 +1,10 @@
+"observation": {
+  "satellite" : [
+    {
+      "name": "NORAD TLE file of the active satellites",
+      "modulation": "fm",
+      "bandwidth": 35000,
+	  "priority": 1
+    }
+  ]
+}
