@@ -152,6 +152,15 @@ int json_parse(const char *json, observation_t *observation, const char **error)
 
 	  LOG_I("Satellite frequency: [ %d ]", sat->frequency);
 
+      if (!json_get_double_by_key(jsatellitePart, "min_elevation", &sat->min_elevation)) {
+        *error = "'/observation/satellite/min_elevation' not specified";
+        ret = -1;
+        goto out;
+      }
+
+	  LOG_I("Satellite min. elevation: [ %d ]", sat->min_elevation);
+
+
       if (!json_get_int_by_key(jsatellitePart, "bandwidth", &sat->bandwidth)) {
         *error = "'/observation/satellite/bandwidth' not specified";
         ret = -1;

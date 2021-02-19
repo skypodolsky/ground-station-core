@@ -38,9 +38,30 @@ static void newline_guillotine(char *str)
 		*pos = '\0';
 }
 
+static bool sat_is_crossing_zero(double aos_az, double los_az)
+{
+	if (los_az > 180.0) {
+		if (los_az - (aos_az + 180.0) > 0)
+			return true;
+		else
+			return false;
+	} else {
+		if (los_az - (aos_az - 180.0) < 0)
+			return true;
+		else
+			return false;
+	}
+}
+
+static double sat_reverse_azimuth(double az)
+{
+	return (az  > 180.0) ? az - 180.0 : az + 180.0;
+}
+
 static void *sat_scheduler(void *opt)
 {
 	time_t current_time;
+	int time_delay = 1000000;
 
 	satellite_t *sat;
 	observation_t *obs = (observation_t *) opt;
@@ -54,41 +75,60 @@ static void *sat_scheduler(void *opt)
 	fflush(stdout); /** just to avoid mixing up the output: happens sometimes */
 	while (obs->sch_terminate == false) {
 
-		if (obs->sim_time == 0)
-			time(&current_time);
-		else
-			current_time = obs->sim_time;
+		time(&current_time);
+
+		if (obs->sim_time)
+			current_time += obs->sim_time;
 
 		if (obs->active == NULL) {
 
+			time_delay = 1000000;
+
 			LIST_FOREACH(sat, &obs->satellites_list, entries) {
 
-				if (sat->next_aos > 0 &&
-						current_time > sat->next_aos) {
-
-					obs->active = sat;
-					orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
-					observer = predict_create_observer("ISU GS", sat_get_observation()->latitude * M_PI / 180.0, sat_get_observation()->longitude * M_PI / 180.0, 10);
-
-					if (orbital_elements == NULL || observer == NULL) {
-						LOG_E("Error creating observer");
+				if (sat->next_aos > 0) {
+					if ((current_time > (sat->next_aos - 120)) && sat->parked == false) {
+						LOG_I("Parking antenna for the receiving of %s", sat->name);
+						if (!sat->zero_transition)
+							rotctl_send_and_wait(obs, sat->aos_az, 0);
+						else
+							rotctl_send_and_wait(obs, sat->aos_az, 180);
+						LOG_I("Parking done");
+						sat->parked = true;
 					}
+					if (current_time > sat->next_aos) {
 
-					LOG_I("Tracking started: %s", sat->name);
-					break;
+						obs->active = sat;
+						orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
+						observer = predict_create_observer("ISU GS", sat_get_observation()->latitude * M_PI / 180.0, sat_get_observation()->longitude * M_PI / 180.0, 10);
+
+						if (orbital_elements == NULL || observer == NULL) {
+							LOG_E("Error creating observer");
+						}
+
+						LOG_I("Tracking started: %s", sat->name);
+						break;
+					}
 				}
 			}
 		} else {
 			struct predict_position orbit;
 			struct predict_observation observation;
 
+			time_delay = 100000;
 			predict_orbit(orbital_elements, &orbit, predict_to_julian(current_time));
 			predict_observe_orbit(observer, &orbit, &observation);
+			double az = rad_to_deg(observation.azimuth);
+			double el = rad_to_deg(observation.elevation);
 			double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
-			LOG_I("Az: %f; El: %f, Doppler shift: %f", rad_to_deg(observation.azimuth), rad_to_deg(observation.elevation), shift);
+			if (sat->zero_transition) {
+				az = sat_reverse_azimuth(az);
+				el = 180 - el;
+			}
+			LOG_I("Az: %f; El: %f, Doppler shift: %f", az, el, shift);
 
-			rotctl_send(obs, rad_to_deg(observation.azimuth), rad_to_deg(observation.elevation));
+			rotctl_send_and_wait(obs, az, el);
 
 			if (current_time > obs->active->next_los) {
 				predict_destroy_observer(observer);
@@ -97,12 +137,13 @@ static void *sat_scheduler(void *opt)
 				if (sat_setup(obs->active) == -1) {
 					LOG_E("Error while rescheduling %s", obs->active->name);
 				}
+				obs->active->parked = false;
 				LOG_I("Rescheduled %s", obs->active->name);
 				obs->active = NULL;
 			}
 		}
 
-		sleep(1);
+		usleep(time_delay);
 	}
 
 	LOG_I("Scheduler terminated");
@@ -189,16 +230,15 @@ int sat_predict(satellite_t *sat)
 	if (!sat)
 		return -1;
 
-	if (sat_get_observation()->sim_time == 0)
-		time(&current_time);
-	else
-		current_time = sat_get_observation()->sim_time;
+	time(&current_time);
+
+	if (sat_get_observation()->sim_time)
+		current_time += sat_get_observation()->sim_time;
 
 	predict_orbital_elements_t *orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
 	predict_observer_t *observer = predict_create_observer("ISU GS", sat_get_observation()->latitude * M_PI / 180.0, sat_get_observation()->longitude * M_PI / 180.0, 10);
 
 	predict_julian_date_t start_time = predict_to_julian(current_time);
-	sat->min_elevation = 70;
 
 reschedule:
 
@@ -215,6 +255,11 @@ reschedule:
 		struct tm tm_los;
 		char aos_buf[32];
 		char los_buf[32];
+		struct predict_position orbit;
+		struct predict_observation observation;
+
+		predict_orbit(orbital_elements, &orbit, aos.time);
+		predict_observe_orbit(observer, &orbit, &observation);
 
 		time_t aos_time_t = predict_from_julian(aos.time);
 		time_t los_time_t = predict_from_julian(los.time);
@@ -225,9 +270,27 @@ reschedule:
 		strftime(aos_buf, sizeof(aos_buf), "%d %B %Y - %I:%M%p %Z", &tm_aos);
 		strftime(los_buf, sizeof(los_buf), "%d %B %Y - %I:%M%p %Z", &tm_los);
 
-		LOG_I("Max elevation %f deg., AOS on %s, LOS on %s", max_elev, aos_buf, los_buf);
 		sat->next_aos = aos_time_t;
 		sat->next_los = los_time_t;
+		sat->aos_az = rad_to_deg(observation.azimuth);
+
+		predict_orbit(orbital_elements, &orbit, los.time);
+		predict_observe_orbit(observer, &orbit, &observation);
+
+		sat->los_az = rad_to_deg(observation.azimuth);
+		LOG_I("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
+
+		sat->zero_transition = sat_is_crossing_zero(sat->aos_az, sat->los_az);
+		if (sat->zero_transition) {
+			sat->aos_az = sat_reverse_azimuth(sat->aos_az);
+			sat->los_az = sat_reverse_azimuth(sat->los_az);
+			LOG_I("Zero transition, reversing azimuths");
+			LOG_I("New AOS azimuth: %f", sat->aos_az);
+			LOG_I("New LOS azimuth: %f", sat->los_az);
+		}
+		else
+			LOG_I("No zero transition.");
+
 	} else {
 		ret = -1;
 		LOG_I("Couldn't find the needed elevation");
@@ -308,6 +371,19 @@ static observation_t *sat_alloc_observation_data(void)
 
 	obs->sch_terminate = false;
 
+	/** FIXME */
+	strncpy(obs->cli.addr, "127.0.0.1", sizeof(obs->cli.addr));
+	obs->cli.port_az = 8080;
+	obs->cli.port_el = 8081;
+
+	if (rotctl_open(obs, ROT_TYPE_AZ) == -1) {
+		printf("error\n");
+	}
+
+	if (rotctl_open(obs, ROT_TYPE_EL) == -1) {
+		printf("error\n");
+	}
+
 	pthread_create(&obs->sch_thread, NULL, sat_scheduler, obs);
 	return obs;
 }
@@ -321,6 +397,9 @@ static int sat_clear_all(observation_t *obs)
 		LIST_REMOVE(sat, entries);
 		free(sat);
 	}
+
+	rotctl_close(obs, ROT_TYPE_AZ);
+	rotctl_close(obs, ROT_TYPE_EL);
 
 	obs->sch_terminate = true;
 	pthread_join(obs->sch_thread, NULL);

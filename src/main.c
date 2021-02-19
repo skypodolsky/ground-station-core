@@ -19,20 +19,22 @@ void handle_sigint(int sig)
 /** Used for simulation to set needed time */
 void handle_sigusr1(int sig)
 {
+	time_t current_time;
 	struct tm timeval = {0};
 	timeval.tm_year = 2021-1900;
 	timeval.tm_mon = 1;
-	timeval.tm_mday = 13;
-	timeval.tm_hour = 10;
-	timeval.tm_min = 2;
+	timeval.tm_mday = 21;
+	timeval.tm_hour = 6;
+	timeval.tm_min = 50;
 
-	sat_simul_time_set(mktime(&timeval));
+	time(&current_time);
+	sat_simul_time_set(mktime(&timeval) - current_time);
 }
 
 /** Used for simulation to increment time by time step */
 void handle_sigusr2(int sig)
 {
-	sat_simul_time_step(10);
+	sat_simul_time_step(30);
 }
 
 int main(int argc, char **argv)

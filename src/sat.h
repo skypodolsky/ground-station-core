@@ -18,19 +18,25 @@ typedef struct satellite_t {
 	char tle1[MAX_TLE_LEN];
 	char tle2[MAX_TLE_LEN];
   	modulation_t modulation;
-	float min_elevation;
+	double min_elevation;
   	int frequency;
   	int bandwidth;
   	int priority;
 	time_t next_aos;
 	time_t next_los;
+	double aos_az;
+	double los_az;
+	bool zero_transition;
+	bool parked;
 	void *obs;
   	LIST_ENTRY(satellite_t) entries;
 } satellite_t;
 
 typedef struct netcli_t {
-	int port;
-	int conn_fd;
+	int port_az;
+	int port_el;
+	int az_conn_fd;
+	int el_conn_fd;
 	char addr[32];
 } netcli_t;
 
