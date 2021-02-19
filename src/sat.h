@@ -13,6 +13,8 @@ typedef enum modulation_t {
 	MODULATION_AFSK
 } modulation_t;
 
+typedef struct observation_t observation_t;
+
 typedef struct satellite_t {
 	char name[MAX_TLE_SAT_NAME_LEN]; 
 	char tle1[MAX_TLE_LEN];
@@ -28,7 +30,8 @@ typedef struct satellite_t {
 	double los_az;
 	bool zero_transition;
 	bool parked;
-	void *obs;
+	observation_t *obs;
+	predict_orbital_elements_t *orbital_elements;
   	LIST_ENTRY(satellite_t) entries;
 } satellite_t;
 
@@ -49,8 +52,19 @@ typedef struct observation_t {
 	netcli_t cli;
 	bool sch_terminate;
 	pthread_t sch_thread;
+	predict_observer_t *observer;
 	LIST_HEAD(satellites_list_head, satellite_t) satellites_list;
 } observation_t;
+
+typedef enum sat_process_plane_t {
+	SAT_PROCESS_AZIMUTH,
+	SAT_PROCESS_ELEVATION
+} sat_process_plane_t;
+
+// typedef struct thread_param_t {
+//     observation_t *obs;
+	
+// } thread_param_t;
 
 int sat_setup(satellite_t *sat);
 int sat_setup_observation(void);

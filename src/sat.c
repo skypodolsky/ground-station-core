@@ -58,21 +58,93 @@ static double sat_reverse_azimuth(double az)
 	return (az  > 180.0) ? az - 180.0 : az + 180.0;
 }
 
+static void *sat_tracking_az(void *opt)
+{
+	int time_delay = 100000;
+	time_t current_time;
+	observation_t *obs;
+	struct predict_position orbit;
+	struct predict_observation observation;
+
+	obs = (observation_t *) opt;
+	if (!obs)
+		return NULL;
+
+	do {
+		time(&current_time);
+
+		if (obs->sim_time)
+			current_time += obs->sim_time;
+
+		predict_orbit(obs->active->orbital_elements, &orbit, predict_to_julian(current_time));
+		predict_observe_orbit(obs->observer, &orbit, &observation);
+
+		double az = rad_to_deg(observation.azimuth);
+		double shift = predict_doppler_shift(&observation, obs->active->frequency);
+
+		if (obs->active->zero_transition) {
+			az = sat_reverse_azimuth(az);
+		}
+
+		LOG_I("Az: %.02f, Doppler shift = %f", az, shift);
+
+		rotctl_send_az(obs, az);
+		usleep(time_delay);
+	} while (current_time < obs->active->next_los);
+
+	/** FIXME */
+	return NULL;
+}
+
+static void *sat_tracking_el(void *opt)
+{
+	int time_delay = 100000;
+	time_t current_time;
+	observation_t *obs;
+	struct predict_position orbit;
+	struct predict_observation observation;
+
+	obs = (observation_t *) opt;
+	if (!obs)
+		return NULL;
+
+	do {
+		time(&current_time);
+
+		if (obs->sim_time)
+			current_time += obs->sim_time;
+
+		predict_orbit(obs->active->orbital_elements, &orbit, predict_to_julian(current_time));
+		predict_observe_orbit(obs->observer, &orbit, &observation);
+
+		double el = rad_to_deg(observation.elevation);
+
+		if (obs->active->zero_transition) {
+			el = 180 - el;
+		}
+
+		LOG_I("El: %.02f", el);
+
+		rotctl_send_el(obs, el);
+		usleep(time_delay);
+	} while (current_time < obs->active->next_los);
+
+	/** FIXME */
+	return NULL;
+}
+
 static void *sat_scheduler(void *opt)
 {
 	time_t current_time;
-	int time_delay = 1000000;
 
 	satellite_t *sat;
 	observation_t *obs = (observation_t *) opt;
-	predict_observer_t *observer;
-	predict_orbital_elements_t *orbital_elements;
 
 	if (obs == NULL)
 		return NULL;
 
 	LOG_I("Scheduler started");
-	fflush(stdout); /** just to avoid mixing up the output: happens sometimes */
+	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
 	while (obs->sch_terminate == false) {
 
 		time(&current_time);
@@ -81,8 +153,6 @@ static void *sat_scheduler(void *opt)
 			current_time += obs->sim_time;
 
 		if (obs->active == NULL) {
-
-			time_delay = 1000000;
 
 			LIST_FOREACH(sat, &obs->satellites_list, entries) {
 
@@ -93,18 +163,13 @@ static void *sat_scheduler(void *opt)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
 							rotctl_send_and_wait(obs, sat->aos_az, 180);
+
 						LOG_I("Parking done");
 						sat->parked = true;
 					}
 					if (current_time > sat->next_aos) {
 
 						obs->active = sat;
-						orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
-						observer = predict_create_observer("ISU GS", sat_get_observation()->latitude * M_PI / 180.0, sat_get_observation()->longitude * M_PI / 180.0, 10);
-
-						if (orbital_elements == NULL || observer == NULL) {
-							LOG_E("Error creating observer");
-						}
 
 						LOG_I("Tracking started: %s", sat->name);
 						break;
@@ -112,40 +177,24 @@ static void *sat_scheduler(void *opt)
 				}
 			}
 		} else {
-			struct predict_position orbit;
-			struct predict_observation observation;
+			pthread_t az_thread;
+			pthread_t el_thread;
 
-			time_delay = 100000;
-			predict_orbit(orbital_elements, &orbit, predict_to_julian(current_time));
-			predict_observe_orbit(observer, &orbit, &observation);
-			double az = rad_to_deg(observation.azimuth);
-			double el = rad_to_deg(observation.elevation);
-			double shift = predict_doppler_shift(&observation, obs->active->frequency);
+			pthread_create(&az_thread, NULL, sat_tracking_az, obs);
+			pthread_create(&el_thread, NULL, sat_tracking_el, obs);
+			pthread_join(az_thread, NULL);
+			pthread_join(el_thread, NULL);
 
-			if (sat->zero_transition) {
-				az = sat_reverse_azimuth(az);
-				el = 180 - el;
+			if (sat_setup(obs->active) == -1) {
+				LOG_E("Error while rescheduling %s", obs->active->name);
 			}
-			LOG_I("Az: %f; El: %f, Doppler shift: %f", az, el, shift);
 
-			rotctl_send_and_wait(obs, az, el);
-
-			if (current_time > obs->active->next_los) {
-				predict_destroy_observer(observer);
-				predict_destroy_orbital_elements(orbital_elements);
-
-				if (sat_setup(obs->active) == -1) {
-					LOG_E("Error while rescheduling %s", obs->active->name);
-				}
-				obs->active->parked = false;
-				LOG_I("Rescheduled %s", obs->active->name);
-				obs->active = NULL;
-			}
+			obs->active->parked = false;
+			LOG_I("Rescheduled %s", obs->active->name);
+			obs->active = NULL;
 		}
 
-		usleep(time_delay);
 	}
-
 	LOG_I("Scheduler terminated");
 	return NULL;
 }
@@ -235,17 +284,14 @@ int sat_predict(satellite_t *sat)
 	if (sat_get_observation()->sim_time)
 		current_time += sat_get_observation()->sim_time;
 
-	predict_orbital_elements_t *orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
-	predict_observer_t *observer = predict_create_observer("ISU GS", sat_get_observation()->latitude * M_PI / 180.0, sat_get_observation()->longitude * M_PI / 180.0, 10);
-
 	predict_julian_date_t start_time = predict_to_julian(current_time);
 
 reschedule:
 
 	do {
-		elev = predict_at_max_elevation(observer, orbital_elements, start_time);
-		aos = predict_next_aos(observer, orbital_elements, start_time);
-		los = predict_next_los(observer, orbital_elements, start_time);
+		elev = predict_at_max_elevation(sat->obs->observer, sat->orbital_elements, start_time);
+		aos = predict_next_aos(sat->obs->observer, sat->orbital_elements, start_time);
+		los = predict_next_los(sat->obs->observer, sat->orbital_elements, start_time);
 		start_time = los.time;
 		max_elev = rad_to_deg(elev.elevation);
 	} while (max_elev < sat->min_elevation);
@@ -258,8 +304,8 @@ reschedule:
 		struct predict_position orbit;
 		struct predict_observation observation;
 
-		predict_orbit(orbital_elements, &orbit, aos.time);
-		predict_observe_orbit(observer, &orbit, &observation);
+		predict_orbit(sat->orbital_elements, &orbit, aos.time);
+		predict_observe_orbit(sat->obs->observer, &orbit, &observation);
 
 		time_t aos_time_t = predict_from_julian(aos.time);
 		time_t los_time_t = predict_from_julian(los.time);
@@ -274,8 +320,8 @@ reschedule:
 		sat->next_los = los_time_t;
 		sat->aos_az = rad_to_deg(observation.azimuth);
 
-		predict_orbit(orbital_elements, &orbit, los.time);
-		predict_observe_orbit(observer, &orbit, &observation);
+		predict_orbit(sat->orbital_elements, &orbit, los.time);
+		predict_observe_orbit(sat->obs->observer, &orbit, &observation);
 
 		sat->los_az = rad_to_deg(observation.azimuth);
 		LOG_I("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
@@ -321,9 +367,6 @@ reschedule:
 		}
 	}
 
-	predict_destroy_observer(observer);
-	predict_destroy_orbital_elements(orbital_elements);
-
 	return ret;
 }
 
@@ -341,6 +384,7 @@ int sat_setup(satellite_t *sat)
 
 	strcpy(sat->tle1, tle1);
 	strcpy(sat->tle2, tle2);
+	sat->orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
 
 	LOG_I("Satellite found: [%s]", sat->name);
 	LOG_I("TLE1: [%s]", tle1);
@@ -384,6 +428,8 @@ static observation_t *sat_alloc_observation_data(void)
 		printf("error\n");
 	}
 
+	obs->observer = predict_create_observer("ISU GS", obs->latitude * M_PI / 180.0, obs->longitude * M_PI / 180.0, 10);
+
 	pthread_create(&obs->sch_thread, NULL, sat_scheduler, obs);
 	return obs;
 }
@@ -392,8 +438,12 @@ static int sat_clear_all(observation_t *obs)
 {
 	satellite_t *sat;
 
+	obs->sch_terminate = true;
+	pthread_join(obs->sch_thread, NULL);
+
 	while (!LIST_EMPTY(&obs->satellites_list)) {
 		sat = LIST_FIRST(&obs->satellites_list);
+		predict_destroy_orbital_elements(sat->orbital_elements);
 		LIST_REMOVE(sat, entries);
 		free(sat);
 	}
@@ -401,9 +451,7 @@ static int sat_clear_all(observation_t *obs)
 	rotctl_close(obs, ROT_TYPE_AZ);
 	rotctl_close(obs, ROT_TYPE_EL);
 
-	obs->sch_terminate = true;
-	pthread_join(obs->sch_thread, NULL);
-
+	predict_destroy_observer(obs->observer);
 	free(obs);
 
 	return 0;

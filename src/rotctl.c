@@ -93,3 +93,36 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 	LOG_I("rotctl command done");
 	return ret;
 }
+
+static int rotctl_send(observation_t *obs, bool az, double val)
+{
+	int fd;
+	int ret;
+	char val_buf[32] = { 0 };
+	char rxbuf[2048] = { 0 };
+
+	ret = 0;
+
+	if (obs == NULL)
+		return -1;
+
+	fd = az ? obs->cli.az_conn_fd : obs->cli.el_conn_fd;
+	snprintf(val_buf, sizeof(val_buf), "w " "%s" "%.02f\n", az ? "A" : "E", val);
+
+	write(fd, val_buf, strlen(val_buf));
+	read(fd, rxbuf, sizeof(rxbuf));
+
+	LOG_I("rotctl command done");
+	return ret;
+}
+
+int rotctl_send_az(observation_t *obs, double az)
+{
+	return rotctl_send(obs, true, az);
+}
+
+int rotctl_send_el(observation_t *obs, double el)
+{
+	return rotctl_send(obs, false, el);
+}
+
