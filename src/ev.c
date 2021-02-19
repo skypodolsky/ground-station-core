@@ -98,10 +98,9 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	if (bytes_left != 0)
 		return;
 
-	if (sat_setup_observation() == -1)
+	if ((observation = sat_setup_observation()) == NULL)
 		goto clear_and_reply;
 
-	observation = sat_get_observation();
 	if (json_parse(json, observation, &error) == -1) {
 		LOG_E("json parse error");
 		goto clear_and_reply;

@@ -67,8 +67,8 @@ typedef enum sat_process_plane_t {
 // } thread_param_t;
 
 int sat_setup(satellite_t *sat);
-int sat_setup_observation(void);
 observation_t *sat_get_observation(void);
+observation_t *sat_setup_observation(void);
 
 
 void sat_simul_time_step(time_t timestep);

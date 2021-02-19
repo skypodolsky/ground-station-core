@@ -281,8 +281,8 @@ int sat_predict(satellite_t *sat)
 
 	time(&current_time);
 
-	if (sat_get_observation()->sim_time)
-		current_time += sat_get_observation()->sim_time;
+	if (sat->obs->sim_time)
+		current_time += sat->obs->sim_time;
 
 	predict_julian_date_t start_time = predict_to_julian(current_time);
 
@@ -457,12 +457,8 @@ static int sat_clear_all(observation_t *obs)
 	return 0;
 }
 
-int sat_setup_observation()
+observation_t *sat_setup_observation()
 {
-	int ret;
-
-	ret = 0;
-
 	if (_observation) {
 		LOG_I("Remove old observation entries");
 		sat_clear_all(_observation);
@@ -472,11 +468,5 @@ int sat_setup_observation()
 		LOG_E("Couldn't create a new observation entry");
 	}
 
-	return ret;
-}
-
-observation_t *sat_get_observation()
-{
 	return _observation;
 }
-
