@@ -414,18 +414,14 @@ static observation_t *sat_alloc_observation_data(void)
 	LIST_INIT(&(obs)->satellites_list);
 
 	obs->sch_terminate = false;
-
-	/** FIXME */
-	strncpy(obs->cli.addr, "127.0.0.1", sizeof(obs->cli.addr));
-	obs->cli.port_az = 8080;
-	obs->cli.port_el = 8081;
+	obs->cfg = cfg_global_get();
 
 	if (rotctl_open(obs, ROT_TYPE_AZ) == -1) {
-		printf("error\n");
+		LOG_E("Couldn't establish connection with azimuth rotctld\n");
 	}
 
 	if (rotctl_open(obs, ROT_TYPE_EL) == -1) {
-		printf("error\n");
+		LOG_E("Couldn't establish connection with elevation rotctld\n");
 	}
 
 	obs->observer = predict_create_observer("ISU GS", obs->latitude * M_PI / 180.0, obs->longitude * M_PI / 180.0, 10);

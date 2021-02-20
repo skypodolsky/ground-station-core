@@ -21,14 +21,14 @@ int rotctl_open(observation_t *obs, rot_type_t type)
 	server_addr.sin_family = AF_INET;
 
 	if (type == ROT_TYPE_AZ) {
-		fd = &obs->cli.az_conn_fd;
-		server_addr.sin_port = htons(obs->cli.port_az);
+		fd = &obs->cfg->cli.azimuth_conn_fd;
+		server_addr.sin_port = htons(obs->cfg->cli.azimuth_port);
 	} else {
-		fd = &obs->cli.el_conn_fd;
-		server_addr.sin_port = htons(obs->cli.port_el);
+		fd = &obs->cfg->cli.elevation_conn_fd;
+		server_addr.sin_port = htons(obs->cfg->cli.elevation_port);
 	}
 
-	if ((ret = inet_pton(AF_INET, obs->cli.addr, &server_addr.sin_addr)) != 1) {
+	if ((ret = inet_pton(AF_INET, obs->cfg->cli.remote_ip, &server_addr.sin_addr)) != 1) {
 		LOG_E("Error on inet_pton");
 		return -1;
 	}
@@ -54,7 +54,7 @@ int rotctl_close(observation_t *obs, rot_type_t type)
 	if (obs == NULL)
 		return -1;
 
-	fd = (type == ROT_TYPE_AZ) ? &obs->cli.az_conn_fd : &obs->cli.el_conn_fd;
+	fd = (type == ROT_TYPE_AZ) ? &obs->cfg->cli.azimuth_conn_fd : &obs->cfg->cli.elevation_conn_fd;
 
 	if ((ret = shutdown(*fd, SHUT_RDWR)) == -1) {
 		LOG_E("Error on shutdown");
@@ -75,7 +75,7 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 	int ret;
 	char az_buf[32] = { 0 };
 	char el_buf[32] = { 0 };
-	char rxbuf[2048] = { 0 };
+	char rxbuf[4096] = { 0 };
 
 	ret = 0;
 
@@ -85,10 +85,10 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 	snprintf(az_buf, sizeof(az_buf), "w A%.02f\n", az);
 	snprintf(el_buf, sizeof(el_buf), "w E%.02f\n", el);
 
-	write(obs->cli.az_conn_fd, az_buf, strlen(az_buf));
-	write(obs->cli.el_conn_fd, el_buf, strlen(el_buf));
-	read(obs->cli.az_conn_fd, rxbuf, sizeof(rxbuf));
-	read(obs->cli.el_conn_fd, rxbuf, sizeof(rxbuf));
+	write(obs->cfg->cli.azimuth_conn_fd, az_buf, strlen(az_buf));
+	write(obs->cfg->cli.elevation_conn_fd, el_buf, strlen(el_buf));
+	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
+	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 
 	LOG_I("rotctl command done");
 	return ret;
@@ -99,14 +99,14 @@ static int rotctl_send(observation_t *obs, bool az, double val)
 	int fd;
 	int ret;
 	char val_buf[32] = { 0 };
-	char rxbuf[2048] = { 0 };
+	char rxbuf[4096] = { 0 };
 
 	ret = 0;
 
 	if (obs == NULL)
 		return -1;
 
-	fd = az ? obs->cli.az_conn_fd : obs->cli.el_conn_fd;
+	fd = az ? obs->cfg->cli.azimuth_conn_fd : obs->cfg->cli.elevation_conn_fd;
 	snprintf(val_buf, sizeof(val_buf), "w " "%s" "%.02f\n", az ? "A" : "E", val);
 
 	write(fd, val_buf, strlen(val_buf));

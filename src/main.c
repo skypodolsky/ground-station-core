@@ -97,15 +97,15 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 'r':
-				strncpy(cfg->remote_ip, optarg, sizeof(cfg->remote_ip));
+				strncpy(cfg->cli.remote_ip, optarg, sizeof(cfg->cli.remote_ip));
 
-				if (verify_ip(cfg->remote_ip) == false) {
+				if (verify_ip(cfg->cli.remote_ip) == false) {
 					fprintf(stderr, "Wrong remote IP address\n");
 					goto err;
 				}
 
 				/** FIXME: replace net_cli_t */
-				fprintf(stdout, "Remote IP set to %s\n", cfg->remote_ip);
+				fprintf(stdout, "Remote IP set to %s\n", cfg->cli.remote_ip);
 				break;
 			case 'f':
 				cfg->log_file = fopen(optarg, "a");
@@ -125,10 +125,10 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 'a':
-				cfg->azimuth_port = strtol(optarg, NULL, 10);
+				cfg->cli.azimuth_port = strtol(optarg, NULL, 10);
 				break;
 			case 'e':
-				cfg->elevation_port = strtol(optarg, NULL, 10);
+				cfg->cli.elevation_port = strtol(optarg, NULL, 10);
 				break;
 			case 'h':
 			default:
@@ -136,6 +136,13 @@ int main(int argc, char **argv)
 				goto err;
 		}
 	} while (options != -1);
+
+	if (!cfg->cli.azimuth_port ||
+		!cfg->cli.elevation_port ||
+		!strcmp(cfg->cli.remote_ip, "")) {
+		fprintf(stderr, "Please specify remote parameters to connect\n");
+		goto err;
+	}
 
 	log_init(cfg->log_file, cfg->log_level);
 

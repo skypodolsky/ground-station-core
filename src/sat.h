@@ -2,6 +2,7 @@
 
 #include <predict/predict.h>
 
+#include "cfg.h"
 #include "entry.h"
 
 #define MAX_TLE_LEN 			256
@@ -35,36 +36,18 @@ typedef struct satellite_t {
   	LIST_ENTRY(satellite_t) entries;
 } satellite_t;
 
-typedef struct netcli_t {
-	int port_az;
-	int port_el;
-	int az_conn_fd;
-	int el_conn_fd;
-	char addr[32];
-} netcli_t;
-
 typedef struct observation_t {
 	float latitude;
 	float longitude;
 	satellite_t *active;
 	char gs_name[MAX_GS_NAME_LEN];
 	time_t sim_time; /** used for simulation */
-	netcli_t cli;
 	bool sch_terminate;
 	pthread_t sch_thread;
+	cfg_t *cfg;
 	predict_observer_t *observer;
 	LIST_HEAD(satellites_list_head, satellite_t) satellites_list;
 } observation_t;
-
-typedef enum sat_process_plane_t {
-	SAT_PROCESS_AZIMUTH,
-	SAT_PROCESS_ELEVATION
-} sat_process_plane_t;
-
-// typedef struct thread_param_t {
-//     observation_t *obs;
-	
-// } thread_param_t;
 
 int sat_setup(satellite_t *sat);
 observation_t *sat_get_observation(void);
