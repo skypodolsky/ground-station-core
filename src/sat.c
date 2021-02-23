@@ -351,9 +351,6 @@ reschedule:
 		if (iter == sat)
 			continue;
 
-		/* printf("sat2: next los = %ld, next aos = %ld\n", sat->next_los, sat->next_aos); */
-		/* printf("sat1: next los = %ld, next aos = %ld\n", iter->next_los, iter->next_aos); */
-
 		if ((sat->next_los > iter->next_aos && sat->next_los < iter->next_los) ||
 				(sat->next_aos < iter->next_los && sat->next_aos > iter->next_aos)) {
 
@@ -465,4 +462,22 @@ observation_t *sat_setup_observation()
 	}
 
 	return _observation;
+}
+
+int sat_reschedule_all()
+{
+	satellite_t *iter;
+	observation_t *obs = _observation;
+
+	if (_observation == NULL)
+		return -1;
+
+	LIST_FOREACH(iter, &obs->satellites_list, entries) {
+		predict_destroy_orbital_elements(iter->orbital_elements);
+		if (sat_setup(iter) == -1) {
+			LOG_E("Error rescheduling satellite %s", iter->name);
+			return -1;
+		}
+	}
+	return 0;
 }

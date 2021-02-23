@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pthread.h>
 #include <predict/predict.h>
 
 #include "cfg.h"
@@ -49,10 +50,10 @@ typedef struct observation_t {
 	LIST_HEAD(satellites_list_head, satellite_t) satellites_list;
 } observation_t;
 
+int sat_reschedule_all(void);
 int sat_setup(satellite_t *sat);
 observation_t *sat_get_observation(void);
 observation_t *sat_setup_observation(void);
-
 
 void sat_simul_time_step(time_t timestep);
 void sat_simul_time_set(time_t val);

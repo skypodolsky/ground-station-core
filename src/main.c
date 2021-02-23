@@ -7,37 +7,10 @@
 #include <stdbool.h>
 
 #include "ev.h"
+#include "sig.h"
 #include "sat.h"
 #include "log.h"
 #include "cfg.h"
-
-void handle_sigint(int sig)
-{
-	log_save();
-	exit(0);
-}
-
-/** Used for simulation to set needed time */
-void handle_sigusr1(int sig)
-{
-	time_t current_time;
-	struct tm timeval = {0};
-	timeval.tm_year = 2021-1900;
-	timeval.tm_mon = 1;
-	timeval.tm_mday = 21;
-	timeval.tm_hour = 6;
-	timeval.tm_min = 50;
-
-	time(&current_time);
-	sat_simul_time_set(mktime(&timeval) - current_time);
-}
-
-/** Used for simulation to increment time by time step */
-void handle_sigusr2(int sig)
-{
-	sat_simul_time_step(30);
-}
-
 
 void print_help(void)
 {
@@ -146,9 +119,8 @@ int main(int argc, char **argv)
 
 	log_init(cfg->log_file, cfg->log_level);
 
-	signal(SIGINT, handle_sigint);
-	signal(SIGUSR1, handle_sigusr1);
-	signal(SIGUSR2, handle_sigusr2);
+	if (sig_register() == -1)
+		return -1;
 
 	if (ev_probe(cfg->listen_port) == -1)
 		return -1;
