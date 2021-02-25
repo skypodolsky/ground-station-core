@@ -20,8 +20,8 @@ static void sig_handle_sigusr1(int sig)
 	struct tm timeval = {0};
 	timeval.tm_year = 2021-1900;
 	timeval.tm_mon = 1;
-	timeval.tm_mday = 21;
-	timeval.tm_hour = 6;
+	timeval.tm_mday = 25;
+	timeval.tm_hour = 9;
 	timeval.tm_min = 50;
 
 	time(&current_time);
@@ -36,7 +36,7 @@ static void sig_handle_sigusr2(int sig)
 
 static void sig_handle_sighup(int sig)
 {
-	sat_reschedule();
+	sat_reschedule_all();
 }
 
 int sig_register(void)

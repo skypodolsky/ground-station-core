@@ -7,6 +7,7 @@
 
 #include "log.h"
 #include "sat.h"
+#include "sdr.h"
 #include "rotctl.h"
 #include "helpers.h"
 
@@ -80,13 +81,12 @@ static void *sat_tracking_az(void *opt)
 		predict_observe_orbit(obs->observer, &orbit, &observation);
 
 		double az = rad_to_deg(observation.azimuth);
-		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->active->zero_transition) {
 			az = sat_reverse_azimuth(az);
 		}
 
-		LOG_I("Az: %.02f, Doppler shift = %f", az, shift);
+		LOG_I("Az: %.02f", az);
 
 		rotctl_send_az(obs, az);
 		usleep(time_delay);
@@ -118,12 +118,14 @@ static void *sat_tracking_el(void *opt)
 		predict_observe_orbit(obs->observer, &orbit, &observation);
 
 		double el = rad_to_deg(observation.elevation);
+		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->active->zero_transition) {
 			el = 180 - el;
 		}
 
-		LOG_I("El: %.02f", el);
+		LOG_I("El: %.02f, Doppler shift = %f", el, shift);
+		sdr_set_freq(obs->active->frequency + shift);
 
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
@@ -180,10 +182,18 @@ static void *sat_scheduler(void *opt)
 			pthread_t az_thread;
 			pthread_t el_thread;
 
+			if (sdr_start(obs->active) == -1) {
+				LOG_E("Couldn't start SDR");
+			}
+
 			pthread_create(&az_thread, NULL, sat_tracking_az, obs);
 			pthread_create(&el_thread, NULL, sat_tracking_el, obs);
 			pthread_join(az_thread, NULL);
 			pthread_join(el_thread, NULL);
+
+			if (sdr_stop(obs) == -1) {
+				LOG_E("Couldn't stop SDR");
+			}
 
 			if (sat_setup(obs->active) == -1) {
 				LOG_E("Error while rescheduling %s", obs->active->name);

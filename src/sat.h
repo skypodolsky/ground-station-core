@@ -46,6 +46,7 @@ typedef struct observation_t {
 	bool sch_terminate;
 	pthread_t sch_thread;
 	cfg_t *cfg;
+	int sdr_pid;
 	predict_observer_t *observer;
 	LIST_HEAD(satellites_list_head, satellite_t) satellites_list;
 } observation_t;
