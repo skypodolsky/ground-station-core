@@ -17,7 +17,7 @@ void sat_simul_time_step(time_t timestep)
 {
 	if (_observation) {
 		_observation->sim_time += timestep;
-		LOG_V("Time increment: %ld", _observation->sim_time);
+		LOG_V("Time travel +%ld sec: %ld", timestep, _observation->sim_time);
 	}
 }
 
@@ -26,9 +26,44 @@ void sat_simul_time_set(time_t val)
 	if (_observation)
 		_observation->sim_time = val;
 
-	LOG_V("Manual time set: %ld", _observation->sim_time);
+	LOG_V("Time travel to: %ld", _observation->sim_time);
 }
 
+void sat_move_to_observation()
+{
+	time_t target = 0xFFFFFFFF;
+	time_t current_time;
+	satellite_t *sat;
+	observation_t *obs;
+
+	obs = _observation;
+	if (obs == NULL)
+		return;
+
+	current_time = time(NULL);
+
+	if (obs->active) {
+		target = obs->active->next_los;
+		LOG_I("Tracking active, moving to LOS");
+		goto out;
+	}
+
+	if (LIST_EMPTY(&obs->satellites_list))
+		return;
+
+	LIST_FOREACH(sat, &obs->satellites_list, entries) {
+		if (sat->next_aos < target)
+			target = sat->next_aos;
+	}
+
+	LOG_V("Closest AOS found: %d", target);
+
+out:
+	target -= 120;
+	obs->sim_time = (target - current_time);
+
+	LOG_V("Time travel to: %ld", target);
+}
 
 static void newline_guillotine(char *str)
 {
@@ -73,6 +108,11 @@ static void *sat_tracking_az(void *opt)
 	if (!obs)
 		return NULL;
 
+	time(&current_time);
+
+	if (obs->sim_time)
+			current_time += obs->sim_time;
+
 	LOG_I("Started azimuth control thread.");
 	LOG_V("Current time=%d, %s LOS time %d", current_time, obs->active->name, obs->active->next_los);
 
@@ -101,6 +141,7 @@ static void *sat_tracking_az(void *opt)
 	} while (current_time < obs->active->next_los);
 
 	LOG_V("Azimuth thread done.");
+	LOG_V("Current time=%ld", current_time);
 	/** FIXME */
 	return NULL;
 }
@@ -116,6 +157,11 @@ static void *sat_tracking_el(void *opt)
 	obs = (observation_t *) opt;
 	if (!obs)
 		return NULL;
+
+	time(&current_time);
+
+	if (obs->sim_time)
+			current_time += obs->sim_time;
 
 	LOG_I("Started elevation control thread.");
 	LOG_V("Current time=%d, %s LOS time %d", current_time, obs->active->name, obs->active->next_los);
@@ -147,6 +193,7 @@ static void *sat_tracking_el(void *opt)
 	} while (current_time < obs->active->next_los);
 
 	LOG_V("Elevation thread done.");
+	LOG_V("Current time=%ld", current_time);
 	/** FIXME */
 	return NULL;
 }
@@ -176,7 +223,9 @@ static void *sat_scheduler(void *opt)
 
 				if (sat->next_aos > 0) {
 					if ((current_time > (sat->next_aos - 120)) && sat->parked == false) {
-						LOG_V("Parking antenna for the receiving of %s", sat->name);
+						LOG_I("Parking antenna for the receiving of %s", sat->name);
+						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
+						rotctl_stop(obs);
 						if (!sat->zero_transition)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
@@ -190,6 +239,7 @@ static void *sat_scheduler(void *opt)
 						obs->active = sat;
 
 						LOG_I("Tracking started: %s", sat->name);
+						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						break;
 					}
 				}
@@ -296,8 +346,6 @@ int sat_predict(satellite_t *sat)
 	time_t current_time;
 	struct predict_observation aos;
 	struct predict_observation los;
-	/* struct predict_position orbit; */
-	/* struct predict_observation observation; */
 	struct predict_observation elev;
 
 	ret = 0;
@@ -310,6 +358,8 @@ int sat_predict(satellite_t *sat)
 	if (sat->obs->sim_time)
 		current_time += sat->obs->sim_time;
 
+	LOG_I("SCHEDULE: current time=%ld", current_time);
+
 	predict_julian_date_t start_time = predict_to_julian(current_time);
 
 reschedule:
@@ -317,16 +367,16 @@ reschedule:
 	do {
 		elev = predict_at_max_elevation(sat->obs->observer, sat->orbital_elements, start_time);
 		aos = predict_next_aos(sat->obs->observer, sat->orbital_elements, start_time);
-		los = predict_next_los(sat->obs->observer, sat->orbital_elements, start_time);
+		los = predict_next_los(sat->obs->observer, sat->orbital_elements, aos.time);
 		start_time = los.time;
 		max_elev = rad_to_deg(elev.elevation);
 	} while (max_elev < sat->min_elevation);
 
 	if (max_elev > 0) {
-		struct tm tm_aos;
-		struct tm tm_los;
-		char aos_buf[32];
-		char los_buf[32];
+		struct tm tm_aos = { 0 };
+		struct tm tm_los = { 0 };
+		char aos_buf[32] = { 0 };
+		char los_buf[32] = { 0 };
 		struct predict_position orbit;
 		struct predict_observation observation;
 
@@ -351,6 +401,7 @@ reschedule:
 
 		sat->los_az = rad_to_deg(observation.azimuth);
 		LOG_V("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
+		LOG_I("aos_time=%ld ::: los_time=%ld", aos_time_t, los_time_t);
 
 		sat->zero_transition = sat_is_crossing_zero(sat->aos_az, sat->los_az);
 		if (sat->zero_transition) {

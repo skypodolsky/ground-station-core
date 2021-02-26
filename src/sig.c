@@ -16,6 +16,7 @@ static void sig_handle_sigint(int sig)
 /** Used for simulation to set needed time */
 static void sig_handle_sigusr1(int sig)
 {
+#if 0
 	time_t current_time;
 	struct tm timeval = {0};
 	timeval.tm_year = 2021-1900;
@@ -26,6 +27,8 @@ static void sig_handle_sigusr1(int sig)
 
 	time(&current_time);
 	sat_simul_time_set(mktime(&timeval) - current_time);
+#endif
+	sat_move_to_observation();
 }
 
 /** Used for simulation to increment time by time step */

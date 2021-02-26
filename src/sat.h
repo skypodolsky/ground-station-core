@@ -56,5 +56,6 @@ int sat_setup(satellite_t *sat);
 observation_t *sat_get_observation(void);
 observation_t *sat_setup_observation(void);
 
+void sat_move_to_observation(void);
 void sat_simul_time_step(time_t timestep);
 void sat_simul_time_set(time_t val);

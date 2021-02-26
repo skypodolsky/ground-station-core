@@ -51,7 +51,7 @@ int sdr_start(satellite_t *sat)
 	obs->sdr_pid = fork();
 
 	if (obs->sdr_pid == 0) {
-		char *programName = "/home/stanislavb/Work/rx_tools/rx_fm";
+		char *program_name = "/home/stanislavb/Work/rx_tools/rx_fm";
 		char mod[32];
 		char freq[32];
 		char filename[128];
@@ -65,9 +65,9 @@ int sdr_start(satellite_t *sat)
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
 		snprintf(filename, sizeof(filename), "real_sat_%02d_%02d_%02d-%02d_%02d.wav", timeval.tm_mday, timeval.tm_mon, timeval.tm_year, timeval.tm_hour, timeval.tm_min);
 
-		char *args[] = {programName, "-M", mod, "-r", "44100", "-f", freq, "-d", "driver=hackrf", filename,  NULL};
+		char *args[] = {program_name, "-M", mod, "-r", "44100", "-f", freq, "-d", "driver=hackrf", filename,  NULL};
 
-		execvp(programName, args);
+		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {
 		LOG_E("Error on fork()\n");
 		return -1;

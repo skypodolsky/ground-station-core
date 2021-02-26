@@ -76,9 +76,6 @@ int main(int argc, char **argv)
 					fprintf(stderr, "Wrong remote IP address\n");
 					goto err;
 				}
-
-				/** FIXME: replace net_cli_t */
-				fprintf(stdout, "Remote IP set to %s\n", cfg->cli.remote_ip);
 				break;
 			case 'f':
 				cfg->log_file = fopen(optarg, "a");
