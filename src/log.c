@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -16,9 +17,16 @@ int log_init(FILE *fd, int level)
 
 int log_print(int level, const char *fmt, ...)
 {
+	time_t current_time;
+	struct tm timeval;
+
+	current_time = time(NULL);
+	timeval = *localtime(&current_time);
+
   if (log_level >= level) {
     va_list args;
     va_start(args, fmt);
+	fprintf(log_file, "[%02d:%02d:%02d]", timeval.tm_hour, timeval.tm_min, timeval.tm_sec);
     vfprintf(log_file, fmt, args);
     fprintf(log_file, "\n");
     va_end(args);

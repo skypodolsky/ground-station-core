@@ -54,11 +54,18 @@ int sdr_start(satellite_t *sat)
 		char *programName = "/home/stanislavb/Work/rx_tools/rx_fm";
 		char mod[32];
 		char freq[32];
+		char filename[128];
+		time_t current_time;
+		struct tm timeval;
+
+		current_time = time(NULL);
+		timeval = *localtime(&current_time);
 
 		snprintf(mod, sizeof(mod), "%s", "wbfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
+		snprintf(filename, sizeof(filename), "real_sat_%02d_%02d_%02d-%02d_%02d.wav", timeval.tm_mday, timeval.tm_mon, timeval.tm_year, timeval.tm_hour, timeval.tm_min);
 
-		char *args[] = {programName, "-M", mod, "-r", "11025", "-f", freq, "-d", "driver=hackrf", "real_sat_res.wav",  NULL};
+		char *args[] = {programName, "-M", mod, "-r", "44100", "-f", freq, "-d", "driver=hackrf", filename,  NULL};
 
 		execvp(programName, args);
 	} else if (obs->sdr_pid == -1) {

@@ -25,6 +25,8 @@ void sat_simul_time_set(time_t val)
 {
 	if (_observation)
 		_observation->sim_time = val;
+
+	LOG_V("Manual time set: %ld", _observation->sim_time);
 }
 
 
@@ -71,8 +73,14 @@ static void *sat_tracking_az(void *opt)
 	if (!obs)
 		return NULL;
 
+	LOG_I("Started azimuth control thread.");
+	LOG_V("Current time=%d, %s LOS time %d", current_time, obs->active->name, obs->active->next_los);
+
 	do {
 		time(&current_time);
+
+		/** FIXME: DELETE ME! */
+		current_time += 20;
 
 		if (obs->sim_time)
 			current_time += obs->sim_time;
@@ -86,12 +94,13 @@ static void *sat_tracking_az(void *opt)
 			az = sat_reverse_azimuth(az);
 		}
 
-		LOG_I("Az: %.02f", az);
+		LOG_V("Az: %.02f", az);
 
 		rotctl_send_az(obs, az);
 		usleep(time_delay);
 	} while (current_time < obs->active->next_los);
 
+	LOG_V("Azimuth thread done.");
 	/** FIXME */
 	return NULL;
 }
@@ -108,8 +117,14 @@ static void *sat_tracking_el(void *opt)
 	if (!obs)
 		return NULL;
 
+	LOG_I("Started elevation control thread.");
+	LOG_V("Current time=%d, %s LOS time %d", current_time, obs->active->name, obs->active->next_los);
+
 	do {
 		time(&current_time);
+
+		/** FIXME: DELETE ME! */
+		current_time += 20;
 
 		if (obs->sim_time)
 			current_time += obs->sim_time;
@@ -124,13 +139,14 @@ static void *sat_tracking_el(void *opt)
 			el = 180 - el;
 		}
 
-		LOG_I("El: %.02f, Doppler shift = %f", el, shift);
+		LOG_V("El: %.02f, Doppler shift = %f", el, shift);
 		sdr_set_freq(obs->active->frequency + shift);
 
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
 	} while (current_time < obs->active->next_los);
 
+	LOG_V("Elevation thread done.");
 	/** FIXME */
 	return NULL;
 }
@@ -160,13 +176,13 @@ static void *sat_scheduler(void *opt)
 
 				if (sat->next_aos > 0) {
 					if ((current_time > (sat->next_aos - 120)) && sat->parked == false) {
-						LOG_I("Parking antenna for the receiving of %s", sat->name);
+						LOG_V("Parking antenna for the receiving of %s", sat->name);
 						if (!sat->zero_transition)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
 							rotctl_send_and_wait(obs, sat->aos_az, 180);
 
-						LOG_I("Parking done");
+						LOG_V("Parking done");
 						sat->parked = true;
 					}
 					if (current_time > sat->next_aos) {
@@ -200,7 +216,7 @@ static void *sat_scheduler(void *opt)
 			}
 
 			obs->active->parked = false;
-			LOG_I("Rescheduled %s", obs->active->name);
+			LOG_V("Rescheduled %s", obs->active->name);
 			obs->active = NULL;
 		}
 
@@ -228,7 +244,7 @@ static int sat_fetch_tle(const char *name, char *tle1, char *tle2)
 
 	fd = fopen("active.txt", "r");
 	if (fd == NULL) {
-		LOG_E("TLE file not found");
+		LOG_C("TLE file not found");
 		ret = -1;
 		goto out;
 	}
@@ -238,7 +254,7 @@ static int sat_fetch_tle(const char *name, char *tle1, char *tle2)
 	fseek(fd, 0, SEEK_SET);
 
 	if ((buf = malloc(size + 1)) == NULL) {
-		LOG_E("error of malloc()");
+		LOG_C("Error of malloc()");
 		ret = -1;
 		goto out;
 	}
@@ -258,7 +274,7 @@ static int sat_fetch_tle(const char *name, char *tle1, char *tle2)
 	}
 
 	if (!found) {
-		LOG_I("Satellite %s not found", name);
+		LOG_E("Satellite %s not found", name);
 		ret = -1;
 		goto out;
 	}
@@ -334,22 +350,22 @@ reschedule:
 		predict_observe_orbit(sat->obs->observer, &orbit, &observation);
 
 		sat->los_az = rad_to_deg(observation.azimuth);
-		LOG_I("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
+		LOG_V("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
 
 		sat->zero_transition = sat_is_crossing_zero(sat->aos_az, sat->los_az);
 		if (sat->zero_transition) {
 			sat->aos_az = sat_reverse_azimuth(sat->aos_az);
 			sat->los_az = sat_reverse_azimuth(sat->los_az);
-			LOG_I("Zero transition, reversing azimuths");
-			LOG_I("New AOS azimuth: %f", sat->aos_az);
-			LOG_I("New LOS azimuth: %f", sat->los_az);
+			LOG_V("Zero transition, reversing azimuths");
+			LOG_V("New AOS azimuth: %f", sat->aos_az);
+			LOG_V("New LOS azimuth: %f", sat->los_az);
 		}
 		else
-			LOG_I("No zero transition.");
+			LOG_V("No zero transition.");
 
 	} else {
 		ret = -1;
-		LOG_I("Couldn't find the needed elevation");
+		LOG_E("Couldn't find the needed elevation");
 	}
 
 	satellite_t *iter;
@@ -365,10 +381,10 @@ reschedule:
 				(sat->next_aos < iter->next_los && sat->next_aos > iter->next_aos)) {
 
 			if (sat->priority > iter->priority) {
-				LOG_I("Overlap found, %s rescheduled", iter->name);
+				LOG_V("Overlap with %s found, %s rescheduled", iter->name, iter->name);
 				sat_predict(iter);
 			} else {
-				LOG_I("Overlap found, %s rescheduled", sat->name);
+				LOG_V("Overlap with %s found, %s rescheduled", iter->name, sat->name);
 				goto reschedule;
 			}
 		}
@@ -393,9 +409,9 @@ int sat_setup(satellite_t *sat)
 	strcpy(sat->tle2, tle2);
 	sat->orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
 
-	LOG_I("Satellite found: [%s]", sat->name);
-	LOG_I("TLE1: [%s]", tle1);
-	LOG_I("TLE2: [%s]", tle2);
+	LOG_I("Satellite found in TLE: [%s]", sat->name);
+	LOG_V("TLE1: [%s]", tle1);
+	LOG_V("TLE2: [%s]", tle2);
 
 	sat_predict(sat);
 
@@ -463,12 +479,12 @@ static int sat_clear_all(observation_t *obs)
 observation_t *sat_setup_observation()
 {
 	if (_observation) {
-		LOG_I("Remove old observation entries");
+		LOG_V("Remove old observation entries");
 		sat_clear_all(_observation);
 	}
 
 	if ((_observation = sat_alloc_observation_data()) == NULL) {
-		LOG_E("Couldn't create a new observation entry");
+		LOG_V("Couldn't create a new observation entry");
 	}
 
 	return _observation;
