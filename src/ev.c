@@ -151,7 +151,7 @@ int ev_probe(int port)
 	struct sockaddr_in addr;
 
 	if ((ev_handler.main_sd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		LOG_E("socket error");
+		LOG_C("socket error");
 		return -1;
 	}
 
@@ -162,20 +162,20 @@ int ev_probe(int port)
 
 	reuse = 1;
 	if (setsockopt(ev_handler.main_sd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1) {
-		LOG_E("setsockopt failed");
+		LOG_C("setsockopt failed");
 		exit(1);
 	}
 
 	if (bind(ev_handler.main_sd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
-		LOG_E("bind error");
+		LOG_C("bind error");
 	}
 
 	if (listen(ev_handler.main_sd, 2) < 0) {
-		LOG_E("listen error");
+		LOG_C("listen error");
 		return -1;
 	}
 
-	LOG_I("cgp listening on port %d", port);
+	LOG_I("Listening port %d", port);
 
 	return 0;
 }

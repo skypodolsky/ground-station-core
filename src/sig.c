@@ -20,9 +20,9 @@ static void sig_handle_sigusr1(int sig)
 	struct tm timeval = {0};
 	timeval.tm_year = 2021-1900;
 	timeval.tm_mon = 1;
-	timeval.tm_mday = 25;
-	timeval.tm_hour = 9;
-	timeval.tm_min = 50;
+	timeval.tm_mday = 26;
+	timeval.tm_hour = 6;
+	timeval.tm_min = 48;
 
 	time(&current_time);
 	sat_simul_time_set(mktime(&timeval) - current_time);

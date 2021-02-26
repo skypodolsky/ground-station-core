@@ -29,17 +29,17 @@ int rotctl_open(observation_t *obs, rot_type_t type)
 	}
 
 	if ((ret = inet_pton(AF_INET, obs->cfg->cli.remote_ip, &server_addr.sin_addr)) != 1) {
-		LOG_E("Error on inet_pton");
+		LOG_C("Error on inet_pton");
 		return -1;
 	}
 
 	if ((*fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		LOG_E("Error on socket");
+		LOG_C("Error on socket");
 		return -1;
 	}
 
 	if ((ret = connect(*fd, (struct sockaddr*)&server_addr, sizeof(server_addr))) == -1) {
-		LOG_E("Error on connect");
+		LOG_C("Error on connect");
 		return -1;
 	}
 
@@ -90,7 +90,7 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
 	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 
-	LOG_I("rotctl command done");
+	LOG_V("rotctl command done");
 	return ret;
 }
 
@@ -112,7 +112,7 @@ static int rotctl_send(observation_t *obs, bool az, double val)
 	write(fd, val_buf, strlen(val_buf));
 	read(fd, rxbuf, sizeof(rxbuf));
 
-	LOG_I("rotctl command done");
+	LOG_V("rotctl command done");
 	return ret;
 }
 
