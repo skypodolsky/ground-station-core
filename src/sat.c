@@ -11,6 +11,9 @@
 #include "rotctl.h"
 #include "helpers.h"
 
+#define AZ_OFFSET 	5.0f
+#define AZ_MAX 		354.0f
+
 static observation_t *_observation;
 
 void sat_simul_time_step(time_t timestep)
@@ -96,6 +99,21 @@ static double sat_reverse_azimuth(double az)
 	return (az  > 180.0) ? az - 180.0 : az + 180.0;
 }
 
+static double sat_apply_azimuth_offset(double az, double offset)
+{
+	return fmod(az + offset, 360);
+}
+
+static double sat_fix_azimuth(double az)
+{
+	if (az > AZ_MAX) {
+		LOG_V("Cannot set azimuth %f, restricting (wrong range)", az);
+		az = AZ_MAX;
+	}
+
+	return az;
+}
+
 static void *sat_tracking_az(void *opt)
 {
 	int time_delay = 100000;
@@ -119,9 +137,6 @@ static void *sat_tracking_az(void *opt)
 	do {
 		time(&current_time);
 
-		/** FIXME: DELETE ME! */
-		current_time += 20;
-
 		if (obs->sim_time)
 			current_time += obs->sim_time;
 
@@ -129,6 +144,13 @@ static void *sat_tracking_az(void *opt)
 		predict_observe_orbit(obs->observer, &orbit, &observation);
 
 		double az = rad_to_deg(observation.azimuth);
+
+		if (az != sat_fix_azimuth(az)) {
+			LOG_V("Finishing azimuth thread due to reaching azimuth limit");
+			break;
+		}
+
+		az = sat_apply_azimuth_offset(az, AZ_OFFSET);
 
 		if (obs->active->zero_transition) {
 			az = sat_reverse_azimuth(az);
@@ -169,9 +191,6 @@ static void *sat_tracking_el(void *opt)
 	do {
 		time(&current_time);
 
-		/** FIXME: DELETE ME! */
-		current_time += 20;
-
 		if (obs->sim_time)
 			current_time += obs->sim_time;
 
@@ -182,7 +201,7 @@ static void *sat_tracking_el(void *opt)
 		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->active->zero_transition) {
-			el = 180 - el;
+			el = 180 - (el + 10); /** FIXME: DELETE ME!!! */
 		}
 
 		LOG_V("El: %.02f, Doppler shift = %f", el, shift);
@@ -401,6 +420,15 @@ reschedule:
 
 		sat->los_az = rad_to_deg(observation.azimuth);
 		LOG_V("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
+		LOG_V("Adjusting azimuths according to the restrictions...");
+
+		sat->aos_az = sat_fix_azimuth(sat->aos_az);
+		sat->los_az = sat_fix_azimuth(sat->los_az);
+		sat->aos_az = sat_apply_azimuth_offset(sat->aos_az, AZ_OFFSET);
+		sat->los_az = sat_apply_azimuth_offset(sat->los_az, AZ_OFFSET);
+
+		LOG_V("New AOS azimuth: %f", sat->aos_az);
+		LOG_V("New LOS azimuth: %f", sat->los_az);
 		LOG_I("aos_time=%ld ::: los_time=%ld", aos_time_t, los_time_t);
 
 		sat->zero_transition = sat_is_crossing_zero(sat->aos_az, sat->los_az);
