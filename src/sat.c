@@ -205,7 +205,10 @@ static void *sat_tracking_el(void *opt)
 		}
 
 		LOG_V("El: %.02f, Doppler shift = %f", el, shift);
-		sdr_set_freq(obs->active->frequency + shift);
+
+		if (obs->cfg->dry_run == false) {
+			sdr_set_freq(obs->active->frequency + shift);
+		}
 
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
@@ -267,8 +270,10 @@ static void *sat_scheduler(void *opt)
 			pthread_t az_thread;
 			pthread_t el_thread;
 
-			if (sdr_start(obs->active) == -1) {
-				LOG_E("Couldn't start SDR");
+			if (obs->cfg->dry_run == false) {
+				if (sdr_start(obs->active) == -1) {
+					LOG_E("Couldn't start SDR");
+				}
 			}
 
 			pthread_create(&az_thread, NULL, sat_tracking_az, obs);
@@ -276,8 +281,10 @@ static void *sat_scheduler(void *opt)
 			pthread_join(az_thread, NULL);
 			pthread_join(el_thread, NULL);
 
-			if (sdr_stop(obs) == -1) {
-				LOG_E("Couldn't stop SDR");
+			if (obs->cfg->dry_run == false) {
+				if (sdr_stop(obs) == -1) {
+					LOG_E("Couldn't stop SDR");
+				}
 			}
 
 			if (sat_setup(obs->active) == -1) {

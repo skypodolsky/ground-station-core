@@ -33,6 +33,7 @@ static struct option long_options[] =
 	{"elevation-port",  required_argument,	0, 	'e'},
 	{"azimuth-port",  	required_argument,	0, 	'a'},
 	{"log-file",   		required_argument,	0, 	'f'},
+	{"dry-run",   		no_argument,		0, 	'd'},
 	{"help",			no_argument,		0, 	'h'},
 	{0, 0, 0, 0}
 };
@@ -99,6 +100,9 @@ int main(int argc, char **argv)
 				break;
 			case 'e':
 				cfg->cli.elevation_port = strtol(optarg, NULL, 10);
+				break;
+			case 'd':
+				cfg->dry_run = true;
 				break;
 			case 'h':
 			default:

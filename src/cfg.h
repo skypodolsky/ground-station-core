@@ -18,6 +18,7 @@ typedef struct cfg_t {
 	int log_level;			/** log level 						*/
 	FILE *log_file;			/** file to log output in 			*/
 	netcli_t cli;			/** data for the remote connection	*/
+	bool dry_run;
 } cfg_t;
 
 cfg_t *alloc_cfg(void);
