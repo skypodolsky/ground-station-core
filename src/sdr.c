@@ -61,11 +61,11 @@ int sdr_start(satellite_t *sat)
 		current_time = time(NULL);
 		timeval = *localtime(&current_time);
 
-		snprintf(mod, sizeof(mod), "%s", "wbfm");
+		snprintf(mod, sizeof(mod), "%s", "wfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
-		snprintf(filename, sizeof(filename), "%s_%02d_%02d_%04d-%02d_%02d.wav", sat->name, timeval.tm_mday, timeval.tm_mon, timeval.tm_year, timeval.tm_hour, timeval.tm_min);
+		snprintf(filename, sizeof(filename), "%s_%02d_%02d_%02d-%02d_%02d.wav", sat->name, timeval.tm_mday, timeval.tm_mon, timeval.tm_year, timeval.tm_hour, timeval.tm_min);
 
-		char *args[] = {program_name, "-M", mod, "-r", "44100", "-f", freq, "-l", "0", "-o", "4", "-E", "deemp", "-E", "wav", "-d", "-E", "dc", "driver=hackrf", filename,  NULL};
+		char *args[] = {program_name, "-M", mod, "-r", "44100", "-f", freq, "-l", "0", "-o", "4", "-E", "deemp", "-E", "wav", "-E", "dc", "-d", "driver=hackrf", filename,  NULL};
 
 		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {

@@ -201,7 +201,7 @@ static void *sat_tracking_el(void *opt)
 		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->active->zero_transition) {
-			el = 180 - (el + 10); /** FIXME: DELETE ME!!! */
+			el = 180 - el;
 		}
 
 		LOG_V("El: %.02f, Doppler shift = %f", el, shift);
@@ -422,8 +422,6 @@ reschedule:
 		LOG_V("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
 		LOG_V("Adjusting azimuths according to the restrictions...");
 
-		sat->aos_az = sat_fix_azimuth(sat->aos_az);
-		sat->los_az = sat_fix_azimuth(sat->los_az);
 		sat->aos_az = sat_apply_azimuth_offset(sat->aos_az, AZ_OFFSET);
 		sat->los_az = sat_apply_azimuth_offset(sat->los_az, AZ_OFFSET);
 
@@ -442,6 +440,8 @@ reschedule:
 		else
 			LOG_V("No zero transition.");
 
+		sat->aos_az = sat_fix_azimuth(sat->aos_az);
+		sat->los_az = sat_fix_azimuth(sat->los_az);
 	} else {
 		ret = -1;
 		LOG_E("Couldn't find the needed elevation");
