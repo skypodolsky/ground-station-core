@@ -158,7 +158,7 @@ int json_parse(const char *json, observation_t *observation, const char **error)
         goto out;
       }
 
-	  LOG_V("Satellite min. elevation: [ %d ]", sat->min_elevation);
+	  LOG_V("Satellite min. elevation: [ %f ]", sat->min_elevation);
 
 
       if (!json_get_int_by_key(jsatellitePart, "bandwidth", &sat->bandwidth)) {

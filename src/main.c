@@ -120,6 +120,9 @@ int main(int argc, char **argv)
 
 	log_init(cfg->log_file, cfg->log_level);
 
+	if (cfg->dry_run)
+		LOG_I("Running in the dry-run mode!");
+
 	if (sig_register() == -1)
 		return -1;
 

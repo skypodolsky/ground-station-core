@@ -74,6 +74,7 @@ int rotctl_stop(observation_t *obs)
 {
 	int ret;
 	char buf[32];
+	char rxbuf[4096];
 
 	ret = 0;
 
@@ -83,7 +84,9 @@ int rotctl_stop(observation_t *obs)
 	snprintf(buf, sizeof(buf), "w S\n");
 
 	write(obs->cfg->cli.azimuth_conn_fd, buf, strlen(buf));
+	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
 	write(obs->cfg->cli.elevation_conn_fd, buf, strlen(buf));
+	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 
 	LOG_V("rotctl_stop() command done");
 	return ret;
@@ -104,6 +107,8 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 
 	snprintf(az_buf, sizeof(az_buf), "w A%.02f\n", az);
 	snprintf(el_buf, sizeof(el_buf), "w E%.02f\n", el);
+
+	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
 
 	write(obs->cfg->cli.azimuth_conn_fd, az_buf, strlen(az_buf));
 	write(obs->cfg->cli.elevation_conn_fd, el_buf, strlen(el_buf));

@@ -12,7 +12,7 @@
 #include "helpers.h"
 
 #define AZ_OFFSET 	5.0f
-#define AZ_MAX 		354.0f
+#define AZ_MAX 		352.0f // 354?
 
 static observation_t *_observation;
 
@@ -145,15 +145,15 @@ static void *sat_tracking_az(void *opt)
 
 		double az = rad_to_deg(observation.azimuth);
 
-		if (az != sat_fix_azimuth(az)) {
-			LOG_V("Finishing azimuth thread due to reaching azimuth limit");
-			break;
-		}
-
 		az = sat_apply_azimuth_offset(az, AZ_OFFSET);
 
 		if (obs->active->zero_transition) {
 			az = sat_reverse_azimuth(az);
+		}
+
+		if (az != sat_fix_azimuth(az)) {
+			LOG_V("Finishing azimuth thread due to reaching azimuth limit");
+			break;
 		}
 
 		LOG_V("Az: %.02f", az);
@@ -204,10 +204,10 @@ static void *sat_tracking_el(void *opt)
 			el = 180 - el;
 		}
 
-		LOG_V("El: %.02f, Doppler shift = %f", el, shift);
+		LOG_V("El: %.02f, Doppler shift = %f, new frequency = %f", el, shift, obs->active->frequency + shift);
 
 		if (obs->cfg->dry_run == false) {
-			sdr_set_freq(obs->active->frequency + shift);
+			sdr_set_freq(shift);
 		}
 
 		rotctl_send_el(obs, el);
@@ -466,7 +466,7 @@ reschedule:
 		if ((sat->next_los > iter->next_aos && sat->next_los < iter->next_los) ||
 				(sat->next_aos < iter->next_los && sat->next_aos > iter->next_aos)) {
 
-			if (sat->priority > iter->priority) {
+			if (sat->priority < iter->priority) {
 				LOG_V("Overlap with %s found, %s rescheduled", iter->name, iter->name);
 				sat_predict(iter);
 			} else {
