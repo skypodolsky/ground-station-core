@@ -429,6 +429,7 @@ reschedule:
 		LOG_V("Max elevation %f deg., AOS on %s (az. %f), LOS on %s (az. %f)", max_elev, aos_buf, sat->aos_az, los_buf, sat->los_az);
 		LOG_V("Adjusting azimuths according to the restrictions...");
 
+		sat->max_elevation = max_elev;
 		sat->aos_az = sat_apply_azimuth_offset(sat->aos_az, AZ_OFFSET);
 		sat->los_az = sat_apply_azimuth_offset(sat->los_az, AZ_OFFSET);
 

@@ -63,8 +63,7 @@ int sdr_start(satellite_t *sat)
 
 		snprintf(mod, sizeof(mod), "%s", "wbfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
-		LOG_I("freq=%s", freq);
-		snprintf(filename, sizeof(filename), "%s_%02d_%02d_%02d-%02d_%02d.wav", sat->name, timeval.tm_mday, timeval.tm_mon, timeval.tm_year, timeval.tm_hour, timeval.tm_min);
+		snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d_%.02d_GMT.wav", sat->name, sat->max_elevation, timeval.tm_mday, timeval.tm_mon + 1, timeval.tm_year + 1900, timeval.tm_hour, timeval.tm_min);
 
 		static char *args[] = { "/home/stanislavb/Work/rx_tools/rx_fm", "-M", mod, "-r", "96k", "-f", freq, "-g", "LNA=40,VGA=30,AMP=14", "-E", "wav", "-E", "dc", "-d", "driver=hackrf", filename,  NULL };
 

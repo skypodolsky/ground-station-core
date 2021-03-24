@@ -23,6 +23,7 @@ typedef struct satellite_t {
 	char tle2[MAX_TLE_LEN];
   	modulation_t modulation;
 	double min_elevation;
+	double max_elevation;
   	int frequency;
   	int priority;
 	time_t next_aos;
