@@ -24,7 +24,6 @@ typedef struct satellite_t {
   	modulation_t modulation;
 	double min_elevation;
   	int frequency;
-  	int bandwidth;
   	int priority;
 	time_t next_aos;
 	time_t next_los;

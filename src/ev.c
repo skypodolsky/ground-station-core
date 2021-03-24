@@ -10,7 +10,7 @@
 #include "ev.h"
 #include "log.h"
 #include "sat.h"
-#include "json.h"
+#include "rest_api.h"
 
 char *reply = 
 "HTTP/1.1 200 OK\n"
@@ -26,9 +26,10 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	ssize_t read;
 	char *reply_buf;
 	const char *error;
-	observation_t *observation;
+	/* observation_t *observation; */
 
 	error = NULL;
+	reply_buf = NULL;
 
 	if (EV_ERROR & revents) {
 		LOG_E("got invalid event");
@@ -62,7 +63,7 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	/** 'Content-Length' is _NOT_ guaranteed to come in the first chunk
 	 * but if we have managed to find it, then we may know payload size
 	 */
-
+/* LOG_E("[%s]", ev_handler.buf); */
 	if (ev_handler.cont_length == 0) {
 		const char *cont_len_str = strstr(ev_handler.buf, "Content-Length: ");
 		if (cont_len_str) {
@@ -79,9 +80,9 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 		LOG_V("'Content-Length' is %d bytes", ev_handler.cont_length);
 	}
 
-	const char *json = strstr(ev_handler.buf, "\r\n\r\n");
-	if (json) {
-		json += 4;
+	char *payload = strstr(ev_handler.buf, "\r\n\r\n");
+	if (payload) {
+		payload += 4;
 	} else {
 		return;
 	}
@@ -89,8 +90,8 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	/** at this point we are absolutely sure that we are already
 	 * on the payload data. So let's get the number of rest bytes
 	 */
-	int bytes_after_json = &ev_handler.buf[ev_handler.buf_idx] - json;
-	int bytes_left = ev_handler.cont_length - bytes_after_json;
+	int bytes_of_payload = &ev_handler.buf[ev_handler.buf_idx] - payload;
+	int bytes_left = ev_handler.cont_length - bytes_of_payload;
 
 	if (bytes_left)
 		LOG_V("Got fragment: bytes left = %d", bytes_left);
@@ -98,29 +99,46 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	if (bytes_left != 0)
 		return;
 
-	if ((observation = sat_setup_observation()) == NULL)
-		goto clear_and_reply;
-
-	if (json_parse(json, observation, &error) == -1) {
-		LOG_E("json parse error");
-		goto clear_and_reply;
+	char *api_str;
+	char *type_str = strtok(ev_handler.buf, " ");
+	if (type_str != NULL) {
+		api_str = strtok(NULL, " ");
+		if (api_str == NULL)
+			return; /** should never happen */
 	}
 
-clear_and_reply:
-	if (json_prepare_reply(observation, error, &reply_buf) == -1) {
-		LOG_E("failed to create json reply");
-
-		/** to make sure connection
-		 * will be closed properly
-		 */
-		strcpy(ev_handler.buf, "");
+	rest_api_type_t type = rest_api_get_type(type_str);
+	rest_api_action_t action = rest_api_find_action(api_str, type);
+	if (action == NULL) {
+		LOG_E("action not found");
+		return;
 	}
 
-	snprintf(ev_handler.buf, ev_handler.buf_len, reply, strlen(reply_buf), reply_buf);
+	if (action(payload, &reply_buf, &error) == -1) {
+		LOG_E("error during the request processing");
+		rest_api_prepare_error(error, &reply_buf);
+		goto reply;
+	}
 
-	send(watcher->fd, ev_handler.buf, strlen(ev_handler.buf), 0);
-	bzero(ev_handler.buf, ev_handler.buf_idx);
-	free(reply_buf);
+	/** send the reply */
+	if (type == REST_API_TYPE_POST) {
+		action = rest_api_find_action(api_str, REST_API_TYPE_GET);
+		if (action && (action(payload, &reply_buf, &error) == -1)) {
+			LOG_E("error while creating a reply on POST request");
+			goto reply;
+		}
+	}
+
+reply:
+	if (reply_buf) {
+		snprintf(ev_handler.buf, ev_handler.buf_len, reply, strlen(reply_buf), reply_buf);
+
+		send(watcher->fd, ev_handler.buf, strlen(ev_handler.buf), 0);
+		bzero(ev_handler.buf, ev_handler.buf_idx);
+
+		free(reply_buf);
+		reply_buf = NULL;
+	}
 }
 
 void _ev_accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)

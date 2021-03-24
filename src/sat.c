@@ -576,6 +576,11 @@ observation_t *sat_setup_observation()
 	return _observation;
 }
 
+observation_t *sat_get_observation(void)
+{
+	return _observation;
+}
+
 int sat_reschedule_all()
 {
 	satellite_t *iter;
