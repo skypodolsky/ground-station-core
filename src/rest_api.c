@@ -67,14 +67,14 @@ static int rest_api_get_observation(char *payload, char **reply_buf, const char 
 		json_object_object_add(satObj, "name", satNameObj);
 
 		/** min elevation */
-		json_object *satElevObj = json_object_new_double(sat->min_elevation);
+		json_object *satElevObj = json_object_new_double(sat->max_elevation);
 		if (!satElevObj) {
 			*error = "Out of memory";
 			ret = -1;
 			goto out;
 		}
 
-		json_object_object_add(satObj, "min elevation", satElevObj);
+		json_object_object_add(satObj, "max elevation", satElevObj);
 
 		/** frequency */
 		json_object *satFreqObj = json_object_new_double(sat->frequency);

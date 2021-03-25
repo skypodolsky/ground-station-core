@@ -116,7 +116,7 @@ static double sat_fix_azimuth(double az)
 
 static void *sat_tracking_az(void *opt)
 {
-	int time_delay = 100000;
+	int time_delay = 50000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -170,7 +170,7 @@ static void *sat_tracking_az(void *opt)
 
 static void *sat_tracking_el(void *opt)
 {
-	int time_delay = 100000;
+	int time_delay = 50000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -514,8 +514,8 @@ static observation_t *sat_alloc_observation_data(void)
 		return NULL;
 	}
 
-	obs->latitude = 48.5833f; /** FIXME */
-	obs->longitude = 7.75f; /** FIXME */
+	obs->latitude = 48.31237f; /** FIXME */
+	obs->longitude = 7.44126f; /** FIXME */
 	strncpy(obs->gs_name, "ISU GS", sizeof(obs->gs_name));
 
 	setenv("TZ", "GMT", 1);
