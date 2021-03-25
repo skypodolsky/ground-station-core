@@ -41,7 +41,7 @@ connect:
 	return 0;
 }
 
-int sdr_start(satellite_t *sat)
+int sdr_start(satellite_t *sat, const char *filename)
 {
 	if (!sat) {
 		return -1;
@@ -51,21 +51,14 @@ int sdr_start(satellite_t *sat)
 	obs->sdr_pid = fork();
 
 	if (obs->sdr_pid == 0) {
-		char *program_name = "/home/stanislavb/Work/rx_tools/rx_fm";
-		static char mod[32];
-		static char freq[32];
-		static char filename[128];
-		time_t current_time;
-		struct tm timeval;
-
-		current_time = time(NULL);
-		timeval = *localtime(&current_time);
+		char *program_name = "rx_fm";
+		char mod[32];
+		char freq[32];
 
 		snprintf(mod, sizeof(mod), "%s", "wbfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
-		snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d_%.02d_GMT.wav", sat->name, sat->max_elevation, timeval.tm_mday, timeval.tm_mon + 1, timeval.tm_year + 1900, timeval.tm_hour, timeval.tm_min);
 
-		static char *args[] = { "/home/stanislavb/Work/rx_tools/rx_fm", "-M", mod, "-r", "96k", "-f", freq, "-g", "LNA=40,VGA=30,AMP=14", "-E", "wav", "-E", "dc", "-d", "driver=hackrf", filename,  NULL };
+		char *args[] = { program_name, "-M", mod, "-r", "96k", "-f", freq, "-g", "LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "dc", "-d", "driver=hackrf", (char *) filename,  NULL };
 
 		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {

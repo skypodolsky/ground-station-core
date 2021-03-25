@@ -79,6 +79,15 @@ static void newline_guillotine(char *str)
 		*pos = '\0';
 }
 
+static void space_replace(char *str)
+{
+	int i;
+
+	for (i = 0; i < strlen(str); i++)
+		if (str[i] == ' ')
+			str[i] = '_';
+}
+
 static bool sat_is_crossing_zero(double aos_az, double los_az)
 {
 	if (los_az > 180.0) {
@@ -112,6 +121,14 @@ static double sat_fix_azimuth(double az)
 	}
 
 	return az;
+}
+
+static void sat_send_notification(const char *name, const char *filename)
+{
+	char buf[256];
+
+	snprintf(buf, sizeof(buf), "isu_gs_send_email.sh '%s' '%s'", name, filename);
+	system(buf);
 }
 
 static void *sat_tracking_az(void *opt)
@@ -198,24 +215,60 @@ static void *sat_tracking_el(void *opt)
 		predict_observe_orbit(obs->observer, &orbit, &observation);
 
 		double el = rad_to_deg(observation.elevation);
-		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->active->zero_transition) {
 			el = 180 - el;
 		}
 
-		LOG_V("El: %.02f, Doppler shift = %f, new frequency = %f", el, shift, obs->active->frequency + shift);
-
-		if (obs->cfg->dry_run == false) {
-			sdr_set_freq(shift);
-		}
-
+		LOG_V("El: %.02f", el);
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
 	} while (current_time < obs->active->next_los);
 
 	LOG_V("Elevation thread done.");
 	LOG_V("Current time=%ld", current_time);
+	/** FIXME */
+	return NULL;
+}
+
+static void *sat_tracking_doppler(void *opt)
+{
+	int time_delay = 500000;
+	time_t current_time;
+	observation_t *obs;
+	struct predict_position orbit;
+	struct predict_observation observation;
+
+	obs = (observation_t *) opt;
+	if (!obs)
+		return NULL;
+
+	time(&current_time);
+
+	if (obs->sim_time)
+			current_time += obs->sim_time;
+
+	LOG_I("Started Doppler control thread.");
+
+	do {
+		time(&current_time);
+
+		if (obs->sim_time)
+			current_time += obs->sim_time;
+
+		predict_orbit(obs->active->orbital_elements, &orbit, predict_to_julian(current_time));
+		predict_observe_orbit(obs->observer, &orbit, &observation);
+
+		double shift = predict_doppler_shift(&observation, obs->active->frequency);
+
+		if (obs->cfg->dry_run == false) {
+			sdr_set_freq(shift);
+		}
+
+		usleep(time_delay);
+	} while (current_time < obs->active->next_los);
+
+	LOG_V("Doppler thread done.");
 	/** FIXME */
 	return NULL;
 }
@@ -267,24 +320,40 @@ static void *sat_scheduler(void *opt)
 				}
 			}
 		} else {
+			char filename[128];
+			struct tm timeval;
+			time_t current_time;
 			pthread_t az_thread;
 			pthread_t el_thread;
+			pthread_t doppler_thread;
+
+			current_time = time(NULL);
+			timeval = *localtime(&current_time);
+			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d_%.02d_GMT.wav",
+					sat->name, sat->max_elevation, timeval.tm_mday, timeval.tm_mon + 1, timeval.tm_year + 1900, 
+					timeval.tm_hour, timeval.tm_min);
+
+			space_replace(filename);
 
 			if (obs->cfg->dry_run == false) {
-				if (sdr_start(obs->active) == -1) {
+				if (sdr_start(obs->active, filename) == -1) {
 					LOG_E("Couldn't start SDR");
 				}
 			}
 
 			pthread_create(&az_thread, NULL, sat_tracking_az, obs);
 			pthread_create(&el_thread, NULL, sat_tracking_el, obs);
+			pthread_create(&doppler_thread, NULL, sat_tracking_doppler, obs);
 			pthread_join(az_thread, NULL);
 			pthread_join(el_thread, NULL);
+			pthread_join(doppler_thread, NULL);
 
 			if (obs->cfg->dry_run == false) {
 				if (sdr_stop(obs) == -1) {
 					LOG_E("Couldn't stop SDR");
 				}
+
+				sat_send_notification(obs->active->name, filename);
 			}
 
 			if (sat_setup(obs->active) == -1) {
@@ -527,14 +596,14 @@ static observation_t *sat_alloc_observation_data(void)
 	obs->cfg = cfg_global_get();
 
 	if (rotctl_open(obs, ROT_TYPE_AZ) == -1) {
-		LOG_E("Couldn't establish connection with azimuth rotctld\n");
+		LOG_C("Couldn't establish connection with azimuth rotctld\n");
 	}
 
 	if (rotctl_open(obs, ROT_TYPE_EL) == -1) {
-		LOG_E("Couldn't establish connection with elevation rotctld\n");
+		LOG_C("Couldn't establish connection with elevation rotctld\n");
 	}
 
-	obs->observer = predict_create_observer("ISU GS", obs->latitude * M_PI / 180.0, obs->longitude * M_PI / 180.0, 10);
+	obs->observer = predict_create_observer("ISU GS", obs->latitude * M_PI / 180.0, obs->longitude * M_PI / 180.0, 20);
 
 	pthread_create(&obs->sch_thread, NULL, sat_scheduler, obs);
 	return obs;

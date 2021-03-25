@@ -6,5 +6,5 @@
 #include "sat.h"
 
 int sdr_set_freq(double freq);
-int sdr_start(satellite_t *sat);
+int sdr_start(satellite_t *sat, const char *filename);
 int sdr_stop(observation_t *obs);
