@@ -92,6 +92,32 @@ int rotctl_stop(observation_t *obs)
 	return ret;
 }
 
+int rotctl_calibrate(observation_t *obs, rot_type_t type)
+{
+	int ret;
+	char buf[32] = { 0 };
+	char rxbuf[4096] = { 0 };
+
+	ret = 0;
+
+	if (obs == NULL)
+		return -1;
+
+	snprintf(buf, sizeof(buf), "w CAL\n");
+
+	if (type & ROT_TYPE_AZ) {
+		write(obs->cfg->cli.azimuth_conn_fd, buf, strlen(buf));
+		read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
+	}
+
+	if (type & ROT_TYPE_EL) {
+		write(obs->cfg->cli.elevation_conn_fd, buf, strlen(buf));
+		read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
+	}
+
+	LOG_V("rotctl_calibrate() command done");
+	return ret;
+}
 
 int rotctl_send_and_wait(observation_t *obs, double az, double el)
 {
