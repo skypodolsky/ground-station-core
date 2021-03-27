@@ -132,6 +132,13 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 	ret = 0;
 
+	observation = sat_get_observation();
+	if (observation)
+		if (observation->active) {
+			*error = "Tracking in progress";
+			return -1;
+		}
+
 	LOG_V("parsing JSON request...");
 	jObj = json_tokener_parse(payload);
 	if (!jObj) {

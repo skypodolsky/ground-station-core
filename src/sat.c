@@ -583,8 +583,6 @@ static observation_t *sat_alloc_observation_data(void)
 		return NULL;
 	}
 
-	obs->latitude = 48.31237f; /** FIXME */
-	obs->longitude = 7.44126f; /** FIXME */
 	strncpy(obs->gs_name, "ISU GS", sizeof(obs->gs_name));
 
 	setenv("TZ", "GMT", 1);
@@ -595,6 +593,9 @@ static observation_t *sat_alloc_observation_data(void)
 	obs->sch_terminate = false;
 	obs->cfg = cfg_global_get();
 
+	obs->latitude = obs->cfg->latitude; /* 48.31237f = ISU GS */
+	obs->longitude = obs->cfg->longitude; /* 7.44126f = ISU GS */
+
 	if (rotctl_open(obs, ROT_TYPE_AZ) == -1) {
 		LOG_C("Couldn't establish connection with azimuth rotctld\n");
 	}
@@ -603,6 +604,7 @@ static observation_t *sat_alloc_observation_data(void)
 		LOG_C("Couldn't establish connection with elevation rotctld\n");
 	}
 
+	LOG_I("Creating observer at %f %f", obs->latitude, obs->longitude);
 	obs->observer = predict_create_observer("ISU GS", obs->latitude * M_PI / 180.0, obs->longitude * M_PI / 180.0, 20);
 
 	pthread_create(&obs->sch_thread, NULL, sat_scheduler, obs);

@@ -186,6 +186,7 @@ int ev_probe(int port)
 
 	if (bind(ev_handler.main_sd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
 		LOG_C("bind error");
+		return -1;
 	}
 
 	if (listen(ev_handler.main_sd, 2) < 0) {

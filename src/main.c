@@ -33,6 +33,8 @@ static struct option long_options[] =
 	{"elevation-port",  required_argument,	0, 	'e'},
 	{"azimuth-port",  	required_argument,	0, 	'a'},
 	{"log-file",   		required_argument,	0, 	'f'},
+	{"latitude",   		required_argument,	0, 	'l'},
+	{"longitude",  		required_argument,	0, 	'o'},
 	{"dry-run",   		no_argument,		0, 	'd'},
 	{"help",			no_argument,		0, 	'h'},
 	{0, 0, 0, 0}
@@ -101,6 +103,12 @@ int main(int argc, char **argv)
 			case 'e':
 				cfg->cli.elevation_port = strtol(optarg, NULL, 10);
 				break;
+			case 'l':
+				cfg->latitude = strtod(optarg, NULL);
+				break;
+			case 'o':
+				cfg->longitude = strtod(optarg, NULL);
+				break;
 			case 'd':
 				cfg->dry_run = true;
 				break;
@@ -115,6 +123,11 @@ int main(int argc, char **argv)
 		!cfg->cli.elevation_port ||
 		!strcmp(cfg->cli.remote_ip, "")) {
 		fprintf(stderr, "Please specify remote parameters to connect\n");
+		goto err;
+	}
+
+	if (!cfg->latitude || !cfg->longitude) {
+		fprintf(stderr, "Please specify latitude and longitude\n");
 		goto err;
 	}
 
