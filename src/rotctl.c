@@ -92,7 +92,7 @@ int rotctl_stop(observation_t *obs)
 	return ret;
 }
 
-int rotctl_calibrate(observation_t *obs, rot_type_t type)
+int rotctl_calibrate(observation_t *obs, bool azimuth, bool elevation)
 {
 	int ret;
 	char buf[32] = { 0 };
@@ -105,12 +105,12 @@ int rotctl_calibrate(observation_t *obs, rot_type_t type)
 
 	snprintf(buf, sizeof(buf), "w CAL\n");
 
-	if (type & ROT_TYPE_AZ) {
+	if (azimuth) {
 		write(obs->cfg->cli.azimuth_conn_fd, buf, strlen(buf));
 		read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
 	}
 
-	if (type & ROT_TYPE_EL) {
+	if (elevation) {
 		write(obs->cfg->cli.elevation_conn_fd, buf, strlen(buf));
 		read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 	}

@@ -110,8 +110,9 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	rest_api_type_t type = rest_api_get_type(type_str);
 	rest_api_action_t action = rest_api_find_action(api_str, type);
 	if (action == NULL) {
-		LOG_E("action not found");
-		return;
+		error = "REST API not found";
+		rest_api_prepare_error(error, &reply_buf);
+		goto reply;
 	}
 
 	if (action(payload, &reply_buf, &error) == -1) {

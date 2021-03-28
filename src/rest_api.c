@@ -5,6 +5,7 @@
 #include "sat.h"
 #include "log.h"
 #include "json.h"
+#include "rotctl.h"
 #include "helpers.h"
 #include "rest_api.h"
 
@@ -21,7 +22,7 @@ static int rest_api_get_observation(char *payload, char **reply_buf, const char 
 	observation_t *obs = sat_get_observation();
 
 	if (!obs) {
-		*error = "Observation is not set up";
+		*error = "No observation is set up";
 		ret = -1;
 		goto out;
 	}
@@ -202,7 +203,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 			if (streq(satModulation, "fm")) {
 				sat->modulation = MODULATION_FM;
 			} else if (streq(satModulation, "afsk")) {
-				sat->modulation = MODULATION_AFSK;
+				sat->modulation = MODULATION_AFSK; /** TODO */
 			} else {
 				*error = "'/observation/satellite/modulation' only 'fm' and 'afsk' are supported";
 				ret = -1;
@@ -255,10 +256,78 @@ out:
 	return ret;
 }
 
+static int rest_api_get_calibration(char *payload, char **reply_buf, const char **error)
+{
+	return rest_api_get_status(payload, reply_buf, error);
+}
+
+static int rest_api_set_calibration(char *payload, char **reply_buf, const char **error)
+{
+	int ret;
+	bool azimuth;
+	bool elevation;
+	struct json_object *jObj;
+	struct json_object *calibrationObj;
+	struct json_object *valObj;
+	observation_t *observation;
+
+	ret = 0;
+
+	LOG_I("Calibration REST API started");
+	observation = sat_get_observation();
+	if (!observation) {
+		*error = "No observation is set up";
+		return -1;
+	}
+
+	LOG_V("parsing JSON request...");
+	jObj = json_tokener_parse(payload);
+	if (!jObj) {
+		*error = "Couldn't parse JSON request";
+		return -1;
+	}
+
+	if (!json_object_object_get_ex(jObj, "calibration", &calibrationObj)) {
+		*error = "'/calibration' object is missing";
+		ret = -1;
+		goto out;
+	}
+
+	if (!json_object_object_get_ex(calibrationObj, "azimuth", &valObj)) {
+		*error = "'/azimuth' object is missing";
+		ret = -1;
+		goto out;
+	}
+
+	if (json_object_get_type(valObj) == json_type_boolean) {
+		azimuth = json_object_get_boolean(valObj);
+	}
+
+	if (!json_object_object_get_ex(calibrationObj, "elevation", &valObj)) {
+		*error = "'/elevation' object is missing";
+		ret = -1;
+		goto out;
+	}
+
+	if (json_object_get_type(valObj) == json_type_boolean) {
+		elevation = json_object_get_boolean(valObj);
+	}
+
+	LOG_V("Calibration for: az=%d, el=%d", !!azimuth, !!elevation);
+	rotctl_calibrate(observation, azimuth, elevation);
+	LOG_I("Calibration done");
+
+out:
+	json_object_put(jObj);
+	return ret;
+}
+
 static rest_api_t rest_api[] = {
 	{ "/status", REST_API_TYPE_GET, rest_api_get_status },
 	{ "/observation", REST_API_TYPE_GET, rest_api_get_observation },
 	{ "/observation", REST_API_TYPE_POST, rest_api_set_observation },
+	{ "/calibration", REST_API_TYPE_GET, rest_api_get_calibration},
+	{ "/calibration", REST_API_TYPE_POST, rest_api_set_calibration},
 };
 
 rest_api_type_t rest_api_get_type(const char *type_str)
