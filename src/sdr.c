@@ -58,7 +58,7 @@ int sdr_start(satellite_t *sat, const char *filename)
 		snprintf(mod, sizeof(mod), "%s", "wbfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
 
-		char *args[] = { program_name, "-M", mod, "-s", "190k", "-f", freq, "-p", "55", "-g", "LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "deemp", "-F", "9", "-d", "driver=hackrf", (char *) filename,  NULL };
+		char *args[] = { program_name, "-M", mod, "-s", "190k", "-r", "11025", "-f", freq, "-p", "55", "-g", "LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "deemp", "-E", "dc", "-F", "9", "-d", "driver=hackrf", (char *) filename,  NULL };
 
 		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {

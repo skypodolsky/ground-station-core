@@ -233,7 +233,7 @@ static void *sat_tracking_el(void *opt)
 
 static void *sat_tracking_doppler(void *opt)
 {
-	int time_delay = 500000;
+	int time_delay = 5000000 + (rand() % 500000);
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -320,18 +320,19 @@ static void *sat_scheduler(void *opt)
 				}
 			}
 		} else {
-			char filename[128];
-			struct tm timeval;
-			time_t current_time;
+			char filename[256];
+			struct tm timeval_aos;
+			struct tm timeval_los;
 			pthread_t az_thread;
 			pthread_t el_thread;
 			pthread_t doppler_thread;
 
-			current_time = time(NULL);
-			timeval = *localtime(&current_time);
-			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d_%.02d_GMT.wav",
-					sat->name, sat->max_elevation, timeval.tm_mday, timeval.tm_mon + 1, timeval.tm_year + 1900, 
-					timeval.tm_hour, timeval.tm_min);
+			timeval_aos = *localtime(&obs->active->next_aos);
+			timeval_los = *localtime(&obs->active->next_los);
+
+			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d%.02d%.02d_%.02d%.02d%.02d_GMT.wav",
+					sat->name, sat->max_elevation, timeval_aos.tm_mday, timeval_aos.tm_mon + 1, timeval_aos.tm_year + 1900,
+					timeval_aos.tm_hour, timeval_aos.tm_min, timeval_aos.tm_sec, timeval_los.tm_hour, timeval_los.tm_min, timeval_los.tm_sec);
 
 			space_replace(filename);
 
