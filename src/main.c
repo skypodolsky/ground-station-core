@@ -22,6 +22,9 @@ void print_help(void)
 					" -a, --azimuth-port <port>     :  port of the azimuth rotctld\n"
 					" -e, --elevation-port <port>   :  port of the elevation rotctld\n"
 					" -p, --request-port <port num> :  port number to listen JSON requests\n"
+					" -l, --latitude <value>        :  latitude of the GS\n"
+					" -o, --longitude <value>       :  longitude of the GS\n"
+					" -d, --dry-run                 :  do not invoke an SDR record\n"
 		  			);
 }
 
