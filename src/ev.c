@@ -99,7 +99,7 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	if (bytes_left != 0)
 		return;
 
-	char *api_str;
+	char *api_str = NULL;
 	char *type_str = strtok(ev_handler.buf, " ");
 	if (type_str != NULL) {
 		api_str = strtok(NULL, " ");

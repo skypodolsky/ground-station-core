@@ -23,22 +23,19 @@ static int rest_api_get_observation(char *payload, char **reply_buf, const char 
 
 	if (!obs) {
 		*error = "No observation is set up";
-		ret = -1;
-		goto out;
+		return -1;
 	}
 
 	json_object *replyObj = json_object_new_object();
 	if (!replyObj) {
 		*error = "Out of memory";
-		ret = -1;
-		goto out;
+		return -1;
 	}
 
 	json_object *satArrObj = json_object_new_array();
 	if (!satArrObj) {
 		*error = "Out of memory";
-		ret = -1;
-		goto out;
+		return -1;
 	}
 
 	json_object_object_add(replyObj, "satellite", satArrObj);
@@ -116,8 +113,10 @@ static int rest_api_get_observation(char *payload, char **reply_buf, const char 
 	}
 
 	*reply_buf = strdup(json_object_to_json_string(replyObj));
-	if (!reply_buf)
+	if (!reply_buf) {
+		json_object_put(replyObj);
 		return -1;
+	}
 
 out:
 	json_object_put(replyObj);
@@ -212,7 +211,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 			LOG_V("satellite modulation: [ %s ]", satModulation);
 
-			strncpy(sat->name, satName, sizeof(sat->name));
+			strncpy(sat->name, satName, sizeof(sat->name) - 1);
 
 			if (!json_get_int_by_key(jsatellitePart, "frequency", &sat->frequency)) {
 				*error = "'/observation/satellite/frequency' not specified";
@@ -264,8 +263,8 @@ static int rest_api_get_calibration(char *payload, char **reply_buf, const char 
 static int rest_api_set_calibration(char *payload, char **reply_buf, const char **error)
 {
 	int ret;
-	bool azimuth;
-	bool elevation;
+	bool azimuth = false;
+	bool elevation = false;
 	struct json_object *jObj;
 	struct json_object *calibrationObj;
 	struct json_object *valObj;
@@ -344,6 +343,9 @@ rest_api_action_t rest_api_find_action(const char *api, rest_api_type_t type)
 {
 	int i;
 
+	if (!api)
+		return NULL;
+
 	for (i = 0; i < sizeof(rest_api) / sizeof(rest_api_t); i++) {
 		if (!strncmp(api, rest_api[i].name, strlen(rest_api[i].name))) {
 			if (type == rest_api[i].type) {
@@ -359,6 +361,7 @@ int rest_api_prepare_error(const char *error, char **reply_buf)
 {
 	json_object *errorObj;
 	json_object *replyObj = json_object_new_object();
+
 	if (!replyObj)
 		return -1;
 

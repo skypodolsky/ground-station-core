@@ -125,7 +125,7 @@ static double sat_fix_azimuth(double az)
 
 static void sat_send_notification(const char *name, const char *filename)
 {
-	char buf[256];
+	char buf[512]; /** filename can be up to 256 bytes */
 
 	snprintf(buf, sizeof(buf), "isu_gs_send_email.sh '%s' '%s'", name, filename);
 	system(buf);
@@ -331,7 +331,7 @@ static void *sat_scheduler(void *opt)
 			timeval_los = *localtime(&obs->active->next_los);
 
 			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d%.02d%.02d_%.02d%.02d%.02d_GMT.wav",
-					sat->name, sat->max_elevation, timeval_aos.tm_mday, timeval_aos.tm_mon + 1, timeval_aos.tm_year + 1900,
+					obs->active->name, obs->active->max_elevation, timeval_aos.tm_mday, timeval_aos.tm_mon + 1, timeval_aos.tm_year + 1900,
 					timeval_aos.tm_hour, timeval_aos.tm_min, timeval_aos.tm_sec, timeval_los.tm_hour, timeval_los.tm_min, timeval_los.tm_sec);
 
 			space_replace(filename);

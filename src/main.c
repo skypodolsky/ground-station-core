@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 'r':
-				strncpy(cfg->cli.remote_ip, optarg, sizeof(cfg->cli.remote_ip));
+				strncpy(cfg->cli.remote_ip, optarg, sizeof(cfg->cli.remote_ip) - 1);
 
 				if (verify_ip(cfg->cli.remote_ip) == false) {
 					fprintf(stderr, "Wrong remote IP address\n");
