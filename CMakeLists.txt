@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1)
-set(TARGET_UTIL cgp)
+set(TARGET_UTIL gsc)
 
 project(${TARGET_UTIL})
 
@@ -14,6 +14,5 @@ find_library(LIBPTHREAD pthread)
 add_compile_options(-pedantic -Wall -Werror)
 
 add_executable(${TARGET_UTIL} ${SOURCES})
-
 target_link_libraries(${TARGET_UTIL} ${LIBM} ${LIBEV} ${LIBJSON} ${LIBPREDICT} ${LIBPTHREAD})
-
+install(TARGETS ${TARGET_UTIL} DESTINATION sbin)
