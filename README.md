@@ -44,7 +44,8 @@ cmake ..
 sudo make install
 ```
 
-GSC will register a new cron task for updating the list of active satellites every five days.
+GSC will download a list of active satellites.
+It will also register a new cron task for updating this list every five days.
 
 Configure `gsc_notify.sh` and set relevant e-mails:
 
@@ -64,11 +65,6 @@ screen sudo rotctld -s 9600 -m 1004 -r /dev/ttyUSB0 -T 127.0.0.1 -t 8080 -vvvvv
 
 #elevation controller
 screen sudo rotctld -s 9600 -m 1005 -r /dev/ttyUSB1 -T 127.0.0.1 -t 8081 -vvvvv
-```
-
-Download list of active satellites:
-```
-wget http://celestrak.com/NORAD/elements/active.txt ./build/
 ```
 
 Start GSC:
