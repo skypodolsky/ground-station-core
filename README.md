@@ -28,8 +28,11 @@ sudo make install
 
 Install prerequisites
 ```
-sudo apt-get install cmake gcc make predict libjson-c-dev hamlib-utils
+sudo apt-get install cmake gcc make predict libjson-c-dev hamlib-utils msmtp msmtp-mta
 ```
+
+Configure msmtp
+https://wiki.archlinux.org/title/Msmtp
 
 Install GSC:
 ```
@@ -38,7 +41,17 @@ cd isu_ground_station
 mkdir build
 cd build
 cmake ..
-make
+sudo make install
+```
+
+GSC will register a new cron task for updating the list of active satellites every five days.
+
+Configure `gsc_notify.sh` and set relevant e-mails:
+
+```
+web_addr="http://172.16.30.52:8000"
+sender="gsnotification38@gmail.com"
+recipient="stanislav.barantsev@community.isunet.edu"
 ```
 
 ## Launch
