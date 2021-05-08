@@ -73,3 +73,25 @@ Start GSC:
 ```
 screen sudo ./gsc --verbosity 3 --remote-addr 127.0.0.1 --azimuth-port 8080 --elevation-port 8081 --request-port 25565 --latitude=48.31237 --longitude=7.44126
 ```
+
+# Architecture
+
+## Main software structure
+![Alt text](img/img1.png?raw=true "Main software structure")
+
+## Work sequence
+![Alt text](img/img2.png?raw=true "Work sequence")
+
+## Satellite scheduling
+![Alt text](img/img3.png?raw=true "Work sequence")
+
+# Results
+
+## Western Europe from the NOAA 18 satellite on 30 Mar 2021, multispectral analysis instrument
+![Alt text](img/img4.jpg?raw=true "Western Europe, MSA")
+
+## Northern Sahara and Italy in Map Colored in Infrared (MCIR), NOAA-18, 5 Apr 2021
+![Alt text](img/img5.jpg?raw=true "Northern Sahara and Italy, MCIR")
+
+## France as seen from the NOAA 18 satellite on 6 Apr 2021, multispectral analysis instrument
+![Alt text](img/img6.jpg?raw=true "France, MSA")
