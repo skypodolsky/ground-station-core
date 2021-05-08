@@ -59,7 +59,11 @@ recipient="stanislav.barantsev@community.isunet.edu"
 Start `rotctld` antenna controlling daemon(-s):
 
 ```
-screen sudo rotctld -s 9600 -m 1003 -r /dev/ttyUSB0 -T 127.0.0.1 -t 8080 -vvvvv
+#azimuth controller
+screen sudo rotctld -s 9600 -m 1004 -r /dev/ttyUSB0 -T 127.0.0.1 -t 8080 -vvvvv
+
+#elevation controller
+screen sudo rotctld -s 9600 -m 1005 -r /dev/ttyUSB1 -T 127.0.0.1 -t 8081 -vvvvv
 ```
 
 Download list of active satellites:
