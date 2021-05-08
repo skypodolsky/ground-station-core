@@ -127,7 +127,7 @@ static void sat_send_notification(const char *name, const char *filename)
 {
 	char buf[512]; /** filename can be up to 256 bytes */
 
-	snprintf(buf, sizeof(buf), "isu_gs_send_email.sh '%s' '%s'", name, filename);
+	snprintf(buf, sizeof(buf), "gsc_notify.sh '%s' '%s'", name, filename);
 	system(buf);
 }
 
