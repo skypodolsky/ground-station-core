@@ -388,7 +388,7 @@ static int sat_fetch_tle(const char *name, char *tle1, char *tle2)
 		goto out;
 	}
 
-	fd = fopen("active.txt", "r");
+	fd = fopen(SATFILE_PATH "active.txt", "r");
 	if (fd == NULL) {
 		LOG_C("TLE file not found");
 		ret = -1;
