@@ -6,13 +6,15 @@ Tested with weather NOAA satellites and the International Space station (ISS).
 
 ## Features
 
-1. Compatible with all common SDRs
-2. Compatible with all common antenna controllers
-3. Completely autonomous: doesn't need internet connection to operate
-4. Flexible: uses networking to operate with different parts
-5. All Unix-based systems supported
-6. JSON-based configuration
-7. Doppler compensation
+- [x] Compatible with all common SDRs
+- [x] Compatible with all common antenna controllers
+- [x] Completely autonomous: doesn't need internet connection to operate
+- [x] Flexible: uses networking to operate with different parts
+- [x] All Unix-based systems supported
+- [x] JSON-based configuration
+- [x] Doppler compensation
+- [ ] Secure connection
+- [ ] Config file
 
 ## Installation
 
@@ -45,7 +47,7 @@ sudo make install
 ```
 
 GSC will download a list of active satellites.
-It will also register a new cron task for updating this list every five days.
+It will also register a new cron task to update this list every five days.
 
 Configure `gsc_notify.sh` and set relevant e-mails:
 
