@@ -77,7 +77,21 @@ screen sudo ./gsc --verbosity 3 --remote-addr 127.0.0.1 --azimuth-port 8080 --el
 # Architecture
 
 ## Main software structure
+The main concept of the GSC is based on core architecture, which means that all main features are provided by a functional core block, in which all interaction with other utilities is strictly defined. The architecture is portable, which means that it can be moved without almost any changes to other Unix-based platforms (f.e., Raspberry PI, Debian, Ubuntu, Mint, etc). The product is written in C and compiled with CMake, which makes its deployment easier on different Linux platforms.
+
+The architecture consists primarily of the following subsystems:
+ - Configuration server
+ - JSON REST API
+ - Configuration parser
+ - Block for orbit prediction
+ - Block for antenna handling
+ - Block for SDR interaction
+ - Block for scheduling satellites
+ - Notification system
+
 ![Alt text](img/img1.png?raw=true "Main software structure")
+
+Antenna rotators’ controllers are programmed by rotctld daemon. It is a part of Hamlib library, which is widely used as a software controlling unit for ground stations all around the world. It is a standard Linux-based utility that supports a lot of controllers of antenna rotators. Widely used for numerous prediction programs like GPredict, libpredict library for orbit prediction has found an application in this project too. For compatibility with all popular SDRs, SoapySDR library was chosen. It provides a hardware-independent C API for interaction, which is used to control an SDR. The system is configured from console (all static variables, f.e., latitude, longitude, azimuth offset compensation, etc.) and via network requests (dynamic configuration, f.e., tracking configuration). GSC uses a network server to make the second configuration type possible. To provide a reliable solution, libev library for network events handling has been integrated. Last but not least, libjson-c, a C-based library for parsing JSON requests, has also been chosen as a lightweight JSON parsing library.
 
 ## Work sequence
 ![Alt text](img/img2.png?raw=true "Work sequence")
