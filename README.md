@@ -103,6 +103,13 @@ Antenna rotators’ controllers are programmed by rotctld daemon. It is a part o
 ## Work sequence
 <img src="img/img2.png" width="50%" height="50%">
 
+## Configuration
+The utility operates in a fully autonomous mode, allowing it to pass the configuration through the REST API. Fully automated mode means that the system **does not require a network connection to operate**, it needs it only at the dynamic configuration stage. After the system has been configured, the connection isn’t crucial anymore. The configuration requests are transferred with HTTP or HTTPS protocols and invoked in JSON format. The example of JSON REST API POST request is provided below:
+<img src="img/img10.png" width="50%" height="50%">
+
+The response is the the following:
+<img src="img/img9.png" width="50%" height="50%">
+
 ## Satellite scheduling
 <img src="img/img3.png" width="50%" height="50%">
 
@@ -113,6 +120,18 @@ A so-called ‘time travel’ approach was implemented. By ‘time travel’ a v
  - Time travel to the next satellite’s LOS
 
 The first case in makes it possible to simulate the next satellite: this is important to verify that the antenna positioning system and SDR recording works properly. The second one was useful to estimate the scheduling for a bigger time scale.
+
+<img src="img/img7.png" width="60%" height="60%">
+
+## Notification system
+As the new demodulated files are placed on the Web Server/FTP server, the author found it useful to notify users about the new data available. Every time when SDR accomplishes the recording process, a report with the link on the new data is sent. Therefore, two tasks are solved:
+
+ - No need to constantly check the next AOS of a satellite: the system will send a notification
+ - No need to look for the most recent data among hundreds of other files: the system will send a direct link to the file
+
+From the perspective of Linux, this task was solved with msmtp utility. There is a possibility to attach the file directly to the email, but this functionality isn’t implemented in the current release yet. Despite that, the notification can be done for multiple people/groups (this aspect is disclosed in the documentation).
+
+<img src="img/img8.png" width="100%" height="100%">
 
 # Results
 
