@@ -105,10 +105,12 @@ Antenna rotators’ controllers are programmed by rotctld daemon. It is a part o
 
 ## Configuration
 The utility operates in a fully autonomous mode, allowing it to pass the configuration through the REST API. Fully automated mode means that the system **does not require a network connection to operate**, it needs it only at the dynamic configuration stage. After the system has been configured, the connection isn’t crucial anymore. The configuration requests are transferred with HTTP or HTTPS protocols and invoked in JSON format. The example of JSON REST API POST request is provided below:
-<img src="img/img10.png" width="50%" height="50%">
 
-The response is the the following:
-<img src="img/img9.png" width="50%" height="50%">
+<img src="img/img10.PNG" width="50%" height="50%">
+
+The typical response:
+
+<img src="img/img9.PNG" width="50%" height="50%">
 
 ## Satellite scheduling
 <img src="img/img3.png" width="50%" height="50%">
