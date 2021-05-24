@@ -89,23 +89,31 @@ The architecture consists primarily of the following subsystems:
  - Block for scheduling satellites
  - Notification system
 
-![Alt text](img/img1.png?raw=true "Main software structure")
+<img src="img/img1.png" width="30%" height="90%">
 
 Antenna rotators’ controllers are programmed by rotctld daemon. It is a part of Hamlib library, which is widely used as a software controlling unit for ground stations all around the world. It is a standard Linux-based utility that supports a lot of controllers of antenna rotators. Widely used for numerous prediction programs like GPredict, libpredict library for orbit prediction has found an application in this project too. For compatibility with all popular SDRs, SoapySDR library was chosen. It provides a hardware-independent C API for interaction, which is used to control an SDR. The system is configured from console (all static variables, f.e., latitude, longitude, azimuth offset compensation, etc.) and via network requests (dynamic configuration, f.e., tracking configuration). GSC uses a network server to make the second configuration type possible. To provide a reliable solution, libev library for network events handling has been integrated. Last but not least, libjson-c, a C-based library for parsing JSON requests, has also been chosen as a lightweight JSON parsing library.
 
 ## Work sequence
-![Alt text](img/img2.png?raw=true "Work sequence")
+<img src="img/img2.png" width="30%" height="90%">
 
 ## Satellite scheduling
-![Alt text](img/img3.png?raw=true "Work sequence")
+<img src="img/img3.png" width="30%" height="90%">
+
+## Debugging of scheduler
+A so-called ‘time travel’ approach was implemented. By ‘time travel’ a virtual change in time is assumed. It means that if we need to simulate a moving satellite that was scheduled to a specific time, we just need to make the system think that this time has arrived. In such a case system will behave exactly as when the real satellite comes over the horizon. There are two time travels possible in the scope of the GSC utility, that provides a full scope of debugging functionality that was needed during development:
+
+ - Time travel to the next satellite’s AOS
+ - Time travel to the next satellite’s LOS
+
+The first case in makes it possible to simulate the next satellite: this is important to verify that the antenna positioning system and SDR recording works properly. The second one was useful to estimate the scheduling for a bigger time scale.
 
 # Results
 
 ## Western Europe from the NOAA 18 satellite on 30 Mar 2021, multispectral analysis instrument
-![Alt text](img/img4.jpg?raw=true "Western Europe, MSA")
+<img src="img/img4.jpg" width="30%" height="50%">
 
 ## Northern Sahara and Italy in Map Colored in Infrared (MCIR), NOAA-18, 5 Apr 2021
-![Alt text](img/img5.jpg?raw=true "Northern Sahara and Italy, MCIR")
+<img src="img/img5.jpg" width="30%" height="50%">
 
 ## France as seen from the NOAA 18 satellite on 6 Apr 2021, multispectral analysis instrument
-![Alt text](img/img6.jpg?raw=true "France, MSA")
+<img src="img/img6.jpg" width="30%" height="50%">
