@@ -2,7 +2,6 @@
 
 All-in-one open-source utility for SDR-based satellite tracking
 
-Tested with weather NOAA satellites and the International Space station (ISS).
 
 ## Features
 
@@ -15,6 +14,14 @@ Tested with weather NOAA satellites and the International Space station (ISS).
 - [x] Doppler compensation
 - [ ] Secure connection
 - [ ] Config file
+
+## Tests
+
+- [x] NOAA weather satellites
+- [x] Voice audio conversations
+- [ ] GOES geostationary satellites
+- [ ] Meteor satellite
+- [ ] Cubesats
 
 ## Installation
 
@@ -89,15 +96,15 @@ The architecture consists primarily of the following subsystems:
  - Block for scheduling satellites
  - Notification system
 
-<img src="img/img1.png" width="30%" height="90%">
+<img src="img/img1.png" width="70%" height="70%">
 
 Antenna rotators’ controllers are programmed by rotctld daemon. It is a part of Hamlib library, which is widely used as a software controlling unit for ground stations all around the world. It is a standard Linux-based utility that supports a lot of controllers of antenna rotators. Widely used for numerous prediction programs like GPredict, libpredict library for orbit prediction has found an application in this project too. For compatibility with all popular SDRs, SoapySDR library was chosen. It provides a hardware-independent C API for interaction, which is used to control an SDR. The system is configured from console (all static variables, f.e., latitude, longitude, azimuth offset compensation, etc.) and via network requests (dynamic configuration, f.e., tracking configuration). GSC uses a network server to make the second configuration type possible. To provide a reliable solution, libev library for network events handling has been integrated. Last but not least, libjson-c, a C-based library for parsing JSON requests, has also been chosen as a lightweight JSON parsing library.
 
 ## Work sequence
-<img src="img/img2.png" width="30%" height="90%">
+<img src="img/img2.png" width="50%" height="50%">
 
 ## Satellite scheduling
-<img src="img/img3.png" width="30%" height="90%">
+<img src="img/img3.png" width="50%" height="50%">
 
 ## Debugging of scheduler
 A so-called ‘time travel’ approach was implemented. By ‘time travel’ a virtual change in time is assumed. It means that if we need to simulate a moving satellite that was scheduled to a specific time, we just need to make the system think that this time has arrived. In such a case system will behave exactly as when the real satellite comes over the horizon. There are two time travels possible in the scope of the GSC utility, that provides a full scope of debugging functionality that was needed during development:
@@ -110,10 +117,10 @@ The first case in makes it possible to simulate the next satellite: this is impo
 # Results
 
 ## Western Europe from the NOAA 18 satellite on 30 Mar 2021, multispectral analysis instrument
-<img src="img/img4.jpg" width="30%" height="50%">
+<img src="img/img4.jpg" width="50%" height="50%">
 
 ## Northern Sahara and Italy in Map Colored in Infrared (MCIR), NOAA-18, 5 Apr 2021
-<img src="img/img5.jpg" width="30%" height="50%">
+<img src="img/img5.jpg" width="50%" height="50%">
 
 ## France as seen from the NOAA 18 satellite on 6 Apr 2021, multispectral analysis instrument
-<img src="img/img6.jpg" width="30%" height="50%">
+<img src="img/img6.jpg" width="50%" height="50%">
