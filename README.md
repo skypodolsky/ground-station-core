@@ -23,7 +23,7 @@ All-in-one open-source utility for SDR-based satellite tracking
 - [ ] Meteor satellite
 - [ ] Cubesats
 
-## Installation
+# Installation
 
 Install `libpredict`:
 ```
@@ -100,9 +100,6 @@ The architecture consists primarily of the following subsystems:
 
 Antenna rotators’ controllers are programmed by rotctld daemon. It is a part of Hamlib library, which is widely used as a software controlling unit for ground stations all around the world. It is a standard Linux-based utility that supports a lot of controllers of antenna rotators. Widely used for numerous prediction programs like GPredict, libpredict library for orbit prediction has found an application in this project too. For compatibility with all popular SDRs, SoapySDR library was chosen. It provides a hardware-independent C API for interaction, which is used to control an SDR. The system is configured from console (all static variables, f.e., latitude, longitude, azimuth offset compensation, etc.) and via network requests (dynamic configuration, f.e., tracking configuration). GSC uses a network server to make the second configuration type possible. To provide a reliable solution, libev library for network events handling has been integrated. Last but not least, libjson-c, a C-based library for parsing JSON requests, has also been chosen as a lightweight JSON parsing library.
 
-## Work sequence
-<img src="img/img2.png" width="50%" height="50%">
-
 ## Configuration
 The utility operates in a fully autonomous mode, allowing it to pass the configuration through the REST API. Fully automated mode means that the system **does not require a network connection to operate**, it needs it only at the dynamic configuration stage. After the system has been configured, the connection isn’t crucial anymore. The configuration requests are transferred with HTTP or HTTPS protocols and invoked in JSON format. The example of JSON REST API POST request is provided below:
 
@@ -111,6 +108,9 @@ The utility operates in a fully autonomous mode, allowing it to pass the configu
 The typical response:
 
 <img src="img/img9.PNG" width="50%" height="50%">
+
+## Work sequence
+<img src="img/img2.png" width="50%" height="50%">
 
 ## Satellite scheduling
 <img src="img/img3.png" width="50%" height="50%">
