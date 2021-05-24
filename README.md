@@ -19,6 +19,7 @@ All-in-one open-source utility for SDR-based satellite tracking
 
 - [x] NOAA weather satellites
 - [x] Voice audio conversations
+- [x] Two-week in autonomous beta testing
 - [ ] GOES geostationary satellites
 - [ ] Meteor satellite
 - [ ] Cubesats
