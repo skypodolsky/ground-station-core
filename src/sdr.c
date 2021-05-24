@@ -1,3 +1,23 @@
+/*
+ * Ground Station Core (GSC)
+ * Copyright (C) 2021  International Space University
+ * Contributors:
+ *   Stanislav Barantsev
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +61,7 @@ connect:
 	return 0;
 }
 
+/** TODO: implement portable wrappers for different SDRs */
 int sdr_start(satellite_t *sat, const char *filename)
 {
 	if (!sat) {
@@ -58,7 +79,9 @@ int sdr_start(satellite_t *sat, const char *filename)
 		snprintf(mod, sizeof(mod), "%s", "wbfm");
 		snprintf(freq, sizeof(freq), "%d", sat->frequency);
 
-		char *args[] = { program_name, "-M", mod, "-s", "190k", "-r", "11025", "-f", freq, "-p", "55", "-g", "LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "deemp", "-E", "dc", "-F", "9", "-d", "driver=hackrf", (char *) filename,  NULL };
+		char *args[] = { program_name, "-M", mod, "-s", "190k", "-r", "11025", "-f", freq, "-p", "55", "-g", 
+				"LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "deemp", "-E", "dc", "-F", "9", "-d", "driver=hackrf", 
+				(char *) filename,  NULL };
 
 		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {
