@@ -25,6 +25,9 @@
 
 #include "sat.h"
 
-int sdr_set_freq(double freq);
+#define DEF_CONF_SDR_IF_GAIN		40
+#define DEF_CONF_SDR_BB_GAIN		40
+#define DEF_CONF_SDR_LNA_GAIN		14
+
 int sdr_start(satellite_t *sat, const char *filename);
 int sdr_stop(observation_t *obs);

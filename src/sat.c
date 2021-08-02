@@ -30,6 +30,7 @@
 #include "sdr.h"
 #include "rotctl.h"
 #include "helpers.h"
+#include "gnuradio.h"
 
 #define AZ_OFFSET 	5.0f
 #define AZ_MAX 		352.0f // 354?
@@ -253,7 +254,7 @@ static void *sat_tracking_el(void *opt)
 
 static void *sat_tracking_doppler(void *opt)
 {
-	int time_delay = 5000000 + (rand() % 500000);
+	int time_delay = 2000000 + (rand() % 300000);
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -283,7 +284,9 @@ static void *sat_tracking_doppler(void *opt)
 		double shift = predict_doppler_shift(&observation, obs->active->frequency);
 
 		if (obs->cfg->dry_run == false) {
-			sdr_set_freq(shift);
+			LOG_I("Doppler compensation: %f Hz\n", shift);
+			sdr_set_freq(obs->active->frequency + shift - 12000);
+			/* sdr_set_freq(obs->active->frequency); */
 		}
 
 		usleep(time_delay);
@@ -318,7 +321,7 @@ static void *sat_scheduler(void *opt)
 			LIST_FOREACH(sat, &obs->satellites_list, entries) {
 
 				if (sat->next_aos > 0) {
-					if ((current_time > (sat->next_aos - 120)) && sat->parked == false) {
+					if ((current_time > (sat->next_aos - 180)) && sat->parked == false) {
 						LOG_I("Parking antenna for the receiving of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						rotctl_stop(obs);
@@ -351,7 +354,7 @@ static void *sat_scheduler(void *opt)
 			timeval_aos = *localtime(&obs->active->next_aos);
 			timeval_los = *localtime(&obs->active->next_los);
 
-			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d%.02d%.02d_%.02d%.02d%.02d_GMT.wav",
+			snprintf(filename, sizeof(filename), "%s_%.0f_deg_%.02d_%.02d_%.04d-%.02d%.02d%.02d_%.02d%.02d%.02d_GMT",
 					obs->active->name, obs->active->max_elevation, timeval_aos.tm_mday, timeval_aos.tm_mon + 1, timeval_aos.tm_year + 1900,
 					timeval_aos.tm_hour, timeval_aos.tm_min, timeval_aos.tm_sec, timeval_los.tm_hour, timeval_los.tm_min, timeval_los.tm_sec);
 

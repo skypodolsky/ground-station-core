@@ -21,6 +21,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <linux/limits.h>
 
 #define DEF_LISTEN_PORT		25565
 
@@ -35,6 +36,8 @@ typedef struct netcli_t {
 typedef struct cfg_t {
 	int listen_port;		/** port to listen JSON requests 	*/
 	char version[64];		/** utility version 				*/
+	char *grc_config;		/** GNU Radio config				*/
+	char *grc_flowgraph;	/** GNU Radio flowgraph				*/
 	int log_level;			/** log level 						*/
 	FILE *log_file;			/** file to log output in 			*/
 	netcli_t cli;			/** data for the remote connection	*/

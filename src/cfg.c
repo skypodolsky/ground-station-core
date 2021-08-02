@@ -61,3 +61,4 @@ cfg_t *cfg_global_get(void)
 {
 	return _cfg;
 }
+

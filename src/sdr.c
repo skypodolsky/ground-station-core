@@ -28,40 +28,8 @@
 
 #include "sdr.h"
 #include "log.h"
+#include "gnuradio.h"
 
-int sdr_set_freq(double freq)
-{
-	int sockfd; 
-	char buf[64] = { 0 };
-	struct sockaddr_in servaddr; 
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
-	if (sockfd == -1) { 
-		LOG_E("Failed to create socket");
-		return -1;
-	} 
-
-	bzero(&servaddr, sizeof(servaddr));
-
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	servaddr.sin_port = htons(2256); 
-
-connect:
-	if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0) { 
-		LOG_E("Failed to connect to SDR server");
-		sleep(2);
-		goto connect;
-	}
-
-	snprintf(buf, sizeof(buf), "%.0f", freq);
-
-	send(sockfd, buf, strlen(buf), 0);
-	close(sockfd);
-	return 0;
-}
-
-/** TODO: implement portable wrappers for different SDRs */
 int sdr_start(satellite_t *sat, const char *filename)
 {
 	if (!sat) {
@@ -71,18 +39,16 @@ int sdr_start(satellite_t *sat, const char *filename)
 	observation_t *obs = sat->obs;
 	obs->sdr_pid = fork();
 
+	if (sdr_prepare_config(obs->cfg, sat, filename) == -1) {
+		return -1;
+	}
+
 	if (obs->sdr_pid == 0) {
-		char *program_name = "rx_fm";
-		char mod[32];
-		char freq[32];
+		char *program_name = DEF_CONF_PYTHON;
+		/** TODO: rewrite path */
+		char *args[] = { program_name, obs->cfg->grc_flowgraph };
 
-		snprintf(mod, sizeof(mod), "%s", "wbfm");
-		snprintf(freq, sizeof(freq), "%d", sat->frequency);
-
-		char *args[] = { program_name, "-M", mod, "-s", "190k", "-r", "11025", "-f", freq, "-p", "55", "-g", 
-				"LNA=40,VGA=40,AMP=14", "-E", "wav", "-E", "deemp", "-E", "dc", "-F", "9", "-d", "driver=hackrf", 
-				(char *) filename,  NULL };
-
+		LOG_I("Child's PID is %d\n", getpid());
 		execvp(program_name, args);
 	} else if (obs->sdr_pid == -1) {
 		LOG_E("Error on fork()\n");

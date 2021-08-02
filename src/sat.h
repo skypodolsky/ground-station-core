@@ -31,8 +31,9 @@
 #define MAX_GS_NAME_LEN 		16
 
 typedef enum modulation_t {
-	MODULATION_FM,
-	MODULATION_AFSK
+	MODULATION_BPSK,
+	MODULATION_AFSK,
+	MODULATION_FSK
 } modulation_t;
 
 typedef struct observation_t observation_t;
@@ -41,10 +42,28 @@ typedef struct satellite_t {
 	char name[MAX_TLE_SAT_NAME_LEN]; 
 	char tle1[MAX_TLE_LEN];
 	char tle2[MAX_TLE_LEN];
+
+	/** modulation */
   	modulation_t modulation;
+	int baudRate;
+
+	/** bpsk */
+	bool bpskManchester;
+	bool bpskDifferential;
+	bool bpskShort;
+	bool bpskCRC16;
+	/** afsk */
+	int afskDeviation;
+	bool afskG3RUH;
+	int afskAFC; /** audio frequency carrier */
+	/** fsk */
+	bool fskSubAudio;
+	bool fskG3RUH;
+
 	double min_elevation;
 	double max_elevation;
   	int frequency;
+  	int bandwidth;
   	int priority;
 	time_t next_aos;
 	time_t next_los;

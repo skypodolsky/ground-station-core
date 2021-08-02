@@ -34,7 +34,7 @@
 
 void print_help(void)
 {
-	fprintf(stderr, "ISU GS controller v0.1\n\n"
+	fprintf(stderr, "Groung station core v1\n\n"
 					" -h, --help                    :  print this help\n"
 					" -v, --verbosity <0..3>        :  log verbosity\n"
 					" -f, --log-file <filename>     :  redirect logs into a file\n"
@@ -44,22 +44,25 @@ void print_help(void)
 					" -p, --request-port <port num> :  port number to listen JSON requests\n"
 					" -l, --latitude <value>        :  latitude of the GS\n"
 					" -o, --longitude <value>       :  longitude of the GS\n"
+					" -g, --grc-file <path>         :  path to the gnuradio flowgraph\n"
 					" -d, --dry-run                 :  do not invoke an SDR record\n"
 		  			);
 }
 
 static struct option long_options[] =
 {
-	{"request-port",	required_argument,	0, 	'p'},
-	{"remote-addr",  	required_argument,	0, 	'r'},
-	{"verbosity",		required_argument,	0, 	'v'},
-	{"elevation-port",  required_argument,	0, 	'e'},
-	{"azimuth-port",  	required_argument,	0, 	'a'},
-	{"log-file",   		required_argument,	0, 	'f'},
-	{"latitude",   		required_argument,	0, 	'l'},
-	{"longitude",  		required_argument,	0, 	'o'},
-	{"dry-run",   		no_argument,		0, 	'd'},
-	{"help",			no_argument,		0, 	'h'},
+	{"request-port",		required_argument,	0, 	'p'},
+	{"remote-addr", 	 	required_argument,	0, 	'r'},
+	{"verbosity",			required_argument,	0, 	'v'},
+	{"elevation-port",  	required_argument,	0, 	'e'},
+	{"azimuth-port",	  	required_argument,	0, 	'a'},
+	{"log-file",   			required_argument,	0, 	'f'},
+	{"latitude",   			required_argument,	0, 	'l'},
+	{"longitude",  			required_argument,	0, 	'o'},
+	{"gnuradio-flowgraph",  required_argument,	0, 	'g'},
+	{"gnuradio-config",   	required_argument,	0, 	'c'},
+	{"dry-run",   			no_argument,		0, 	'd'},
+	{"help",				no_argument,		0, 	'h'},
 	{0, 0, 0, 0}
 };
 
@@ -80,7 +83,7 @@ int main(int argc, char **argv)
 	strncpy(cfg->version, "v0.1-20022021", sizeof(cfg->version));
 
 	do {
-		if ((options = getopt_long(argc, argv, "p:r:v:e:a:f:h",
+		if ((options = getopt_long(argc, argv, "p:r:v:e:a:f:h:g:c:",
 						long_options, &option_index)) == -1) {
 			break;
 		}
@@ -120,6 +123,16 @@ int main(int argc, char **argv)
 					goto err;
 				}
 				break;
+			case 'g':
+				cfg->grc_flowgraph = strdup(optarg);
+				if (!cfg->grc_flowgraph)
+					goto err;
+				break;
+			case 'c':
+				cfg->grc_config = strdup(optarg);
+				if (!cfg->grc_config)
+					goto err;
+				break;
 			case 'a':
 				cfg->cli.azimuth_port = strtol(optarg, NULL, 10);
 				break;
@@ -141,6 +154,16 @@ int main(int argc, char **argv)
 				goto err;
 		}
 	} while (options != -1);
+
+	if (!cfg->grc_config) {
+		fprintf(stderr, "Please specify the name of the GNU Radio config\n");
+		goto err;
+	}
+
+	if (!cfg->grc_flowgraph) {
+		fprintf(stderr, "Please specify the name of the GNU Radio flowgraph\n");
+		goto err;
+	}
 
 	if (!cfg->cli.azimuth_port ||
 		!cfg->cli.elevation_port ||

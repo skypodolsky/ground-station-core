@@ -178,6 +178,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 	}
 
 	json_object *satellite;
+	struct json_object *valObj;
 	json_object_object_get_ex(observationObj, "satellite", &satellite);
 
 	if (satellite) {
@@ -219,12 +220,159 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
-			if (streq(satModulation, "fm")) {
-				sat->modulation = MODULATION_FM;
+			if (!json_get_int_by_key(jsatellitePart, "baud_rate", &sat->baudRate)) {
+				*error = "'/observation/satellite/baud_rate' not specified";
+				ret = -1;
+				goto out;
+			}
+
+			LOG_V("Baud rate: [ %d ]", sat->baudRate);
+
+			if (!json_get_int_by_key(jsatellitePart, "bandwidth", &sat->bandwidth)) {
+				*error = "'/observation/satellite/bandwidth' not specified";
+				ret = -1;
+				goto out;
+			}
+
+			LOG_V("Bandwidth: [ %d ]", sat->bandwidth);
+
+			if (streq(satModulation, "bpsk")) {
+				sat->modulation = MODULATION_BPSK;
+				if (!json_object_object_get_ex(jsatellitePart, "bpsk_manchester", &valObj)) {
+					*error = "'/observation/satellite/bpsk_manchester' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->bpskManchester = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/bpsk_manchester' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("BPSK Manchester: [ %d ]", !!sat->bpskManchester);
+
+				if (!json_object_object_get_ex(jsatellitePart, "bpsk_differential", &valObj)) {
+					*error = "'/observation/satellite/bpsk_differential' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->bpskDifferential = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/bpsk_differential' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("BPSK Differential: [ %d ]", !!sat->bpskDifferential);
+
+				if (!json_object_object_get_ex(jsatellitePart, "bpsk_short_preamble", &valObj)) {
+					*error = "'/observation/satellite/bpsk_short_preamble' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->bpskShort = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/bpsk_short_preamble' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("BPSK Short Preamble: [ %d ]", !!sat->bpskShort);
+
+				if (!json_object_object_get_ex(jsatellitePart, "bpsk_crc16", &valObj)) {
+					*error = "'/observation/satellite/bpsk_crc16' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->bpskCRC16 = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/bpsk_crc16' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("BPSK CRC16: [ %d ]", !!sat->bpskCRC16);
+
 			} else if (streq(satModulation, "afsk")) {
-				sat->modulation = MODULATION_AFSK; /** TODO */
-			} else {
-				*error = "'/observation/satellite/modulation' only 'fm' and 'afsk' are supported";
+				sat->modulation = MODULATION_AFSK;
+				if (!json_get_int_by_key(jsatellitePart, "afsk_audio_freq_carrier", &sat->afskAFC)) {
+					*error = "'/observation/satellite/afsk_audio_freq_carrier' not specified";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("AFSK AFC: [ %d ]", sat->afskAFC);
+
+				if (!json_get_int_by_key(jsatellitePart, "afsk_deviation", &sat->afskDeviation)) {
+					*error = "'/observation/satellite/afsk_deviation' not specified";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("AFSK Deviation: [ %d ]", sat->afskDeviation);
+
+				if (!json_object_object_get_ex(jsatellitePart, "afsk_g3ruh", &valObj)) {
+					*error = "'/observation/satellite/afsk_g3ruh' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->afskG3RUH = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/afsk_g3ruh' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("FSK G3RUH: [ %d ]", !!sat->afskG3RUH);
+
+			} else if (streq(satModulation, "fsk")) {
+				sat->modulation = MODULATION_FSK;
+
+				if (!json_object_object_get_ex(jsatellitePart, "fsk_sub_audio", &valObj)) {
+					*error = "'/observation/satellite/fsk_sub_audio' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->fskSubAudio = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/fsk_sub_audio' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("FSK subaudio: [ %d ]", !!sat->fskSubAudio);
+
+				if (!json_object_object_get_ex(jsatellitePart, "fsk_g3ruh", &valObj)) {
+					*error = "'/observation/satellite/fsk_g3ruh' object is missing";
+					ret = -1;
+					goto out;
+				}
+
+				if (json_object_get_type(valObj) == json_type_boolean) {
+					sat->fskG3RUH = json_object_get_boolean(valObj);
+				} else {
+					*error = "'/observation/satellite/fsk_g3ruh' isn't boolean";
+					ret = -1;
+					goto out;
+				}
+
+				LOG_V("FSK G3RUH: [ %d ]", !!sat->fskG3RUH);
+			}
+			else {
+				*error = "'/observation/satellite/modulation' only 'bpsk', 'fsk' and 'afsk' are supported";
 				ret = -1;
 				goto out;
 			}
