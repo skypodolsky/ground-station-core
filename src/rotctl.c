@@ -23,10 +23,10 @@
 #include <netinet/in.h> 
 #include <stdlib.h> 
 #include <string.h> 
+#include <unistd.h>
+#include <sys/types.h> 
 #include <arpa/inet.h>
 #include <sys/socket.h> 
-#include <sys/types.h> 
-#include <unistd.h>
 
 #include "log.h"
 #include "sat.h"
@@ -134,6 +134,8 @@ int rotctl_calibrate(observation_t *obs, bool azimuth, bool elevation)
 		write(obs->cfg->cli.elevation_conn_fd, buf, strlen(buf));
 		read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 	}
+
+	sleep(120);
 
 	LOG_V("rotctl_calibrate() command done");
 	return ret;

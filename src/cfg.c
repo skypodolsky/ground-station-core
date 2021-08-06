@@ -21,8 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#include <libconfig.h>
 
 #include "log.h"
 #include "cfg.h"
@@ -46,19 +45,66 @@ void destroy_cfg(cfg_t *cfg)
 	}
 }
 
-bool verify_ip(const char *ip)
-{
-	struct sockaddr_in addr_in;
-
-	if (inet_pton(AF_INET, ip, &addr_in.sin_addr) != 1) {
-		LOG_E("Error on inet_pton");
-		return false;
-	}
-	return true;
-}
-
 cfg_t *cfg_global_get(void)
 {
 	return _cfg;
 }
 
+int cfg_parse(config_t *file_cfg, cfg_t *gsc_cfg)
+{
+	int ret;
+
+	ret = 0;
+
+	if (!config_read_file(file_cfg, DEF_CONFIG_NAME)) {
+		LOG_E("Couldn't read file: %s", config_error_text(file_cfg));
+		return -1;
+	}
+
+	if (!config_lookup_string(file_cfg, "gnuradio-config", &gsc_cfg->grc_config)) {
+		LOG_E("No 'gnuradio-config' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_string(file_cfg, "gnuradio-flowgraph", &gsc_cfg->grc_flowgraph)) {
+		LOG_E("No 'gnuradio-flowgraph' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "azimuth-port", &gsc_cfg->cli.azimuth_port)) {
+		LOG_E("No 'azimuth-port' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "elevation-port", &gsc_cfg->cli.elevation_port)) {
+		LOG_E("No 'elevation-port' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_string(file_cfg, "remote-addr", &gsc_cfg->cli.remote_ip)) {
+		LOG_E("No 'remote-ip' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "request-port", &gsc_cfg->listen_port)) {
+		LOG_E("No 'request-port' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "verbosity", &gsc_cfg->log_level)) {
+		LOG_E("No 'verbosity' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_float(file_cfg, "latitude", &gsc_cfg->latitude)) {
+		LOG_E("No 'latitude' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_float(file_cfg, "longitude", &gsc_cfg->longitude)) {
+		LOG_E("No 'longitude' setting in configuration file");
+		ret = -1;
+	}
+
+	return ret;
+}

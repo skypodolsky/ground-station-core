@@ -28,6 +28,7 @@
 #include "log.h"
 #include "sat.h"
 #include "sdr.h"
+#include "stats.h"
 #include "rotctl.h"
 #include "helpers.h"
 #include "gnuradio.h"
@@ -300,6 +301,7 @@ static void *sat_tracking_doppler(void *opt)
 static void *sat_scheduler(void *opt)
 {
 	time_t current_time;
+	global_stats_t *stats;
 
 	satellite_t *sat;
 	observation_t *obs = (observation_t *) opt;
@@ -307,11 +309,19 @@ static void *sat_scheduler(void *opt)
 	if (obs == NULL)
 		return NULL;
 
+	/** always valid */
+	stats = stats_get_instance();
+
 	LOG_I("Scheduler started");
 	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
 	while (obs->sch_terminate == false) {
 
 		time(&current_time);
+		if (!stats->last_updated)
+			stats->last_updated = current_time;
+
+		stats->observation_uptime += (current_time - stats->last_updated);
+		stats->last_updated = current_time;
 
 		if (obs->sim_time)
 			current_time += obs->sim_time;
@@ -321,7 +331,12 @@ static void *sat_scheduler(void *opt)
 			LIST_FOREACH(sat, &obs->satellites_list, entries) {
 
 				if (sat->next_aos > 0) {
-					if ((current_time > (sat->next_aos - 180)) && sat->parked == false) {
+					if ((current_time > (sat->next_aos - 300)) && sat->parked == false) {
+						if (stats->satellites_tracked % 2 == 0) {
+							LOG_I("Performing the complete calibration\n");
+							rotctl_calibrate(obs, true, true);
+						}
+
 						LOG_I("Parking antenna for the receiving of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						rotctl_stop(obs);
@@ -378,6 +393,7 @@ static void *sat_scheduler(void *opt)
 					LOG_E("Couldn't stop SDR");
 				}
 
+				stats->satellites_tracked++;
 				sat_send_notification(obs->active->name, filename);
 			}
 
@@ -390,6 +406,7 @@ static void *sat_scheduler(void *opt)
 			obs->active = NULL;
 		}
 
+		sleep(1);
 	}
 	LOG_I("Scheduler terminated");
 	return NULL;
@@ -464,6 +481,7 @@ int sat_predict(satellite_t *sat)
 	int ret;
 	float max_elev;
 	time_t current_time;
+	global_stats_t *stats;
 	struct predict_observation aos;
 	struct predict_observation los;
 	struct predict_observation elev;
@@ -472,6 +490,9 @@ int sat_predict(satellite_t *sat)
 
 	if (!sat)
 		return -1;
+
+	/** always valid */
+	stats = stats_get_instance();
 
 	time(&current_time);
 
@@ -529,7 +550,7 @@ reschedule:
 
 		LOG_V("New AOS azimuth: %f", sat->aos_az);
 		LOG_V("New LOS azimuth: %f", sat->los_az);
-		LOG_I("aos_time=%ld ::: los_time=%ld", aos_time_t, los_time_t);
+		LOG_V("aos_time=%ld ::: los_time=%ld", aos_time_t, los_time_t);
 
 		sat->zero_transition = sat_is_crossing_zero(sat->aos_az, sat->los_az);
 		if (sat->zero_transition) {
@@ -541,6 +562,8 @@ reschedule:
 		}
 		else
 			LOG_V("No zero transition.");
+
+		LOG_V("----------------------------");
 
 		sat->aos_az = sat_fix_azimuth(sat->aos_az);
 		sat->los_az = sat_fix_azimuth(sat->los_az);
@@ -563,9 +586,11 @@ reschedule:
 
 			if (sat->priority < iter->priority) {
 				LOG_V("Overlap with %s found, %s rescheduled", iter->name, iter->name);
+				stats->satellites_preempted++;
 				sat_predict(iter);
 			} else {
 				LOG_V("Overlap with %s found, %s rescheduled", iter->name, sat->name);
+				stats->satellites_preempted++;
 				goto reschedule;
 			}
 		}
@@ -579,6 +604,10 @@ int sat_setup(satellite_t *sat)
 	int ret;
 	char tle1[MAX_TLE_LEN] = { 0 };
 	char tle2[MAX_TLE_LEN] = { 0 };
+	global_stats_t *stats;
+
+	/** always valid */
+	stats = stats_get_instance();
 
 	ret = 0;
 
@@ -590,10 +619,11 @@ int sat_setup(satellite_t *sat)
 	strcpy(sat->tle2, tle2);
 	sat->orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
 
-	LOG_I("Satellite found in TLE: [%s]", sat->name);
+	LOG_I("Satellite found in the TLE list: [%s]", sat->name);
 	LOG_V("TLE1: [%s]", tle1);
 	LOG_V("TLE2: [%s]", tle2);
 
+	stats->satellites_scheduled++;
 	sat_predict(sat);
 
 out:
@@ -618,8 +648,8 @@ static observation_t *sat_alloc_observation_data(void)
 	obs->sch_terminate = false;
 	obs->cfg = cfg_global_get();
 
-	obs->latitude = obs->cfg->latitude; /* 48.31237f = ISU GS */
-	obs->longitude = obs->cfg->longitude; /* 7.44126f = ISU GS */
+	obs->latitude = obs->cfg->latitude;
+	obs->longitude = obs->cfg->longitude;
 
 	if (rotctl_open(obs, ROT_TYPE_AZ) == -1) {
 		LOG_C("Couldn't establish connection with azimuth rotctld\n");
@@ -639,6 +669,10 @@ static observation_t *sat_alloc_observation_data(void)
 static int sat_clear_all(observation_t *obs)
 {
 	satellite_t *sat;
+	global_stats_t *stats;
+
+	/** always valid */
+	stats = stats_get_instance();
 
 	obs->sch_terminate = true;
 	pthread_join(obs->sch_thread, NULL);
@@ -652,6 +686,8 @@ static int sat_clear_all(observation_t *obs)
 
 	rotctl_close(obs, ROT_TYPE_AZ);
 	rotctl_close(obs, ROT_TYPE_EL);
+
+	memset(stats, 0, sizeof(global_stats_t));
 
 	predict_destroy_observer(obs->observer);
 	free(obs);

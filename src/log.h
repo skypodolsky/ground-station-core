@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <stdio.h>
+
 typedef enum log_levels_e {
   LVL_CRIT,
   LVL_ERR,

@@ -31,6 +31,7 @@
 #include "sat.h"
 #include "log.h"
 #include "cfg.h"
+#include "helpers.h"
 
 void print_help(void)
 {
@@ -51,16 +52,7 @@ void print_help(void)
 
 static struct option long_options[] =
 {
-	{"request-port",		required_argument,	0, 	'p'},
-	{"remote-addr", 	 	required_argument,	0, 	'r'},
-	{"verbosity",			required_argument,	0, 	'v'},
-	{"elevation-port",  	required_argument,	0, 	'e'},
-	{"azimuth-port",	  	required_argument,	0, 	'a'},
-	{"log-file",   			required_argument,	0, 	'f'},
-	{"latitude",   			required_argument,	0, 	'l'},
-	{"longitude",  			required_argument,	0, 	'o'},
-	{"gnuradio-flowgraph",  required_argument,	0, 	'g'},
-	{"gnuradio-config",   	required_argument,	0, 	'c'},
+	{"config-file",			required_argument,	0, 	'c'},
 	{"dry-run",   			no_argument,		0, 	'd'},
 	{"help",				no_argument,		0, 	'h'},
 	{0, 0, 0, 0}
@@ -69,9 +61,12 @@ static struct option long_options[] =
 int main(int argc, char **argv)
 {
 	cfg_t *cfg;
+	int ret;
 	int options;
 	int option_index;
-	
+	config_t file_cfg;
+
+	/** internal gsc config */
 	cfg = alloc_cfg();
 	if (!cfg) {
 		fprintf(stderr, "%s(): error during init\n", __func__);
@@ -79,71 +74,29 @@ int main(int argc, char **argv)
 	}
 
 	cfg->log_file = stdout;
-	cfg->log_level = LVL_CRIT;
+	cfg->log_level = LVL_VERB;
 	strncpy(cfg->version, "v0.1-20022021", sizeof(cfg->version));
 
+	log_init(cfg->log_file, cfg->log_level);
+
+	config_init(&file_cfg);
+
+	ret = cfg_parse(&file_cfg, cfg);
+	if (ret == -1) {
+		LOG_E("Couldn't parse the config\n");
+		config_destroy(&file_cfg);
+		return -1;
+	}
+
 	do {
-		if ((options = getopt_long(argc, argv, "p:r:v:e:a:f:h:g:c:",
+		if ((options = getopt_long(argc, argv, "p:r:v:e:a:f:h:g:c:d",
 						long_options, &option_index)) == -1) {
 			break;
 		}
 
 		switch (options) {
-			case 'p':
-				cfg->listen_port = strtol(optarg, NULL, 10);
-
-				if (cfg->listen_port < 0x400 ||
-						cfg->listen_port > 0xFFFF) {
-					cfg->listen_port = DEF_LISTEN_PORT;
-					fprintf(stderr, "Wrong listen port, set to default: %d\n", DEF_LISTEN_PORT);
-				}
-				break;
-			case 'r':
-				strncpy(cfg->cli.remote_ip, optarg, sizeof(cfg->cli.remote_ip) - 1);
-
-				if (verify_ip(cfg->cli.remote_ip) == false) {
-					fprintf(stderr, "Wrong remote IP address\n");
-					goto err;
-				}
-				break;
-			case 'f':
-				cfg->log_file = fopen(optarg, "a");
-				if (!cfg->log_file) {
-					fprintf(stderr, "Couldn't open log file\n");
-					goto err;
-				}
-
-				fprintf(stdout, "Log file set to %s\n", optarg);
-				break;
-			case 'v':
-				cfg->log_level = strtol(optarg, NULL, 10);
-
-				if (cfg->log_level < LVL_CRIT || cfg->log_level > LVL_VERB) {
-					fprintf(stderr, "Wrong log level (%d, valid levels are %d..%d)\n", cfg->log_level, LVL_CRIT, LVL_VERB);
-					goto err;
-				}
-				break;
-			case 'g':
-				cfg->grc_flowgraph = strdup(optarg);
-				if (!cfg->grc_flowgraph)
-					goto err;
-				break;
 			case 'c':
-				cfg->grc_config = strdup(optarg);
-				if (!cfg->grc_config)
-					goto err;
-				break;
-			case 'a':
-				cfg->cli.azimuth_port = strtol(optarg, NULL, 10);
-				break;
-			case 'e':
-				cfg->cli.elevation_port = strtol(optarg, NULL, 10);
-				break;
-			case 'l':
-				cfg->latitude = strtod(optarg, NULL);
-				break;
-			case 'o':
-				cfg->longitude = strtod(optarg, NULL);
+				cfg->dry_run = true;
 				break;
 			case 'd':
 				cfg->dry_run = true;
@@ -154,16 +107,6 @@ int main(int argc, char **argv)
 				goto err;
 		}
 	} while (options != -1);
-
-	if (!cfg->grc_config) {
-		fprintf(stderr, "Please specify the name of the GNU Radio config\n");
-		goto err;
-	}
-
-	if (!cfg->grc_flowgraph) {
-		fprintf(stderr, "Please specify the name of the GNU Radio flowgraph\n");
-		goto err;
-	}
 
 	if (!cfg->cli.azimuth_port ||
 		!cfg->cli.elevation_port ||
@@ -177,13 +120,18 @@ int main(int argc, char **argv)
 		goto err;
 	}
 
-	log_init(cfg->log_file, cfg->log_level);
-
-	if (cfg->dry_run)
-		LOG_I("Running in the dry-run mode!");
-
 	if (sig_register() == -1)
 		return -1;
+
+	LOG_V("Dry run:              %s", !!cfg->dry_run ? "true" : "false");
+	LOG_V("Latitude:             %f", cfg->latitude);
+	LOG_V("Longitude:            %f", cfg->longitude);
+	LOG_V("Azimuth port:         %d", cfg->cli.azimuth_port);
+	LOG_V("Elevation port:       %d", cfg->cli.elevation_port);
+	LOG_V("Controller IP:        %s", cfg->cli.remote_ip);
+	LOG_V("Request port:         %d", cfg->listen_port);
+	LOG_V("GNU Radio config:     %s", cfg->grc_config);
+	LOG_V("GNU Radio flowgraph:  %s", cfg->grc_flowgraph);
 
 	if (ev_probe(cfg->listen_port) == -1)
 		return -1;
@@ -192,6 +140,7 @@ int main(int argc, char **argv)
 	return 0;
 
 err:
+	config_destroy(&file_cfg);
 	destroy_cfg(cfg);
 	return -1;
 }

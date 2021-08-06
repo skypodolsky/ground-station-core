@@ -21,32 +21,34 @@
 #pragma once
 
 #include <stdbool.h>
+#include <libconfig.h>
 #include <linux/limits.h>
 
 #define DEF_LISTEN_PORT		25565
+#define DEF_CONFIG_NAME		"default.cfg"
 
 typedef struct netcli_t {
-	int azimuth_port;		/** port of the azimuth rotctld  	*/
-	int elevation_port;		/** port of the elevation rotctld 	*/
-	int azimuth_conn_fd;	/** azimuth rotctld socket  		*/
-	int elevation_conn_fd;	/** elevation rotctld socket 		*/
-	char remote_ip[32];		/** remote IP of rotctld daemons 	*/
+	int azimuth_port;			/** port of the azimuth rotctld  	*/
+	int elevation_port;			/** port of the elevation rotctld 	*/
+	int azimuth_conn_fd;		/** azimuth rotctld socket  		*/
+	int elevation_conn_fd;		/** elevation rotctld socket 		*/
+	const char *remote_ip;		/** remote IP of rotctld daemons 	*/
 } netcli_t;
 
 typedef struct cfg_t {
-	int listen_port;		/** port to listen JSON requests 	*/
-	char version[64];		/** utility version 				*/
-	char *grc_config;		/** GNU Radio config				*/
-	char *grc_flowgraph;	/** GNU Radio flowgraph				*/
-	int log_level;			/** log level 						*/
-	FILE *log_file;			/** file to log output in 			*/
-	netcli_t cli;			/** data for the remote connection	*/
-	double latitude;		/** GS latitude */
-	double longitude;		/** GS longitude */
+	int listen_port;			/** port to listen JSON requests 	*/
+	char version[64];			/** utility version 				*/
+	const char *grc_config;		/** GNU Radio config				*/
+	const char *grc_flowgraph;	/** GNU Radio flowgraph				*/
+	int log_level;				/** log level 						*/
+	FILE *log_file;				/** file to log output in 			*/
+	netcli_t cli;				/** data for the remote connection	*/
+	double latitude;			/** GS latitude */
+	double longitude;			/** GS longitude */
 	bool dry_run;
 } cfg_t;
 
 cfg_t *alloc_cfg(void);
 void destroy_cfg(cfg_t *cfg);
-bool verify_ip(const char *ip);
 cfg_t *cfg_global_get(void);
+int cfg_parse(config_t *file_cfg, cfg_t *gsc_cfg);

@@ -20,7 +20,10 @@
 
 #include <math.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
+#include "log.h"
 #include "helpers.h"
 
 double rad_to_deg(double rad)
@@ -33,3 +36,15 @@ inline bool streq(const char *str1, const char *str2)
 {
   return !strcmp(str1, str2);
 }
+
+bool verify_ip(const char *ip)
+{
+	struct sockaddr_in addr_in;
+
+	if (inet_pton(AF_INET, ip, &addr_in.sin_addr) != 1) {
+		LOG_E("Error on inet_pton");
+		return false;
+	}
+	return true;
+}
+

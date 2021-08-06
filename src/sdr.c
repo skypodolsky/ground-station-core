@@ -46,7 +46,7 @@ int sdr_start(satellite_t *sat, const char *filename)
 	if (obs->sdr_pid == 0) {
 		char *program_name = DEF_CONF_PYTHON;
 		/** TODO: rewrite path */
-		char *args[] = { program_name, obs->cfg->grc_flowgraph };
+		char *args[] = { program_name, (char *) obs->cfg->grc_flowgraph };
 
 		LOG_I("Child's PID is %d\n", getpid());
 		execvp(program_name, args);

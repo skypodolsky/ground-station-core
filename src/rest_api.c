@@ -25,14 +25,82 @@
 #include "sat.h"
 #include "log.h"
 #include "json.h"
+#include "stats.h"
 #include "rotctl.h"
 #include "helpers.h"
 #include "rest_api.h"
 
 static int rest_api_get_status(char *payload, char **reply_buf, const char **error)
 {
-	/** TODO: statistics */
-	return 0;
+	int ret = 0;
+
+	json_object *replyObj = json_object_new_object();
+	if (!replyObj) {
+		*error = "Out of memory";
+		return -1;
+	}
+
+	json_object *statusObj = json_object_new_object();
+	if (!statusObj) {
+		*error = "Out of memory";
+		ret = -1;
+		goto out;
+	}
+
+	json_object_object_add(replyObj, "status", statusObj);
+
+	observation_t *obs = sat_get_observation();
+	if (obs) {
+		global_stats_t *stats = stats_get_instance();
+
+		json_object *uptimeObj = json_object_new_int(stats->observation_uptime);
+		if (!uptimeObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "uptime", uptimeObj);
+
+		json_object *satScheduledObj = json_object_new_int(stats->satellites_scheduled);
+		if (!satScheduledObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "satellites_scheduled", satScheduledObj);
+
+		json_object *satTrackedObj = json_object_new_int(stats->satellites_tracked);
+		if (!satTrackedObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "satellites_tracked", satTrackedObj);
+
+		json_object *satPreemptedObj = json_object_new_int(stats->satellites_preempted);
+		if (!satPreemptedObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "satellites_preempted", satPreemptedObj);
+
+	}
+
+
+	*reply_buf = strdup(json_object_to_json_string(replyObj));
+	if (!reply_buf) {
+		json_object_put(replyObj);
+		return -1;
+	}
+
+out:
+	json_object_put(replyObj);
+	return ret;
 }
 
 static int rest_api_get_observation(char *payload, char **reply_buf, const char **error)
