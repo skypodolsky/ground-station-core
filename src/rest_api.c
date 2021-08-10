@@ -33,6 +33,7 @@
 static int rest_api_get_status(char *payload, char **reply_buf, const char **error)
 {
 	int ret = 0;
+	struct tm tm_aos;
 
 	json_object *replyObj = json_object_new_object();
 	if (!replyObj) {
@@ -89,6 +90,49 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 
 		json_object_object_add(statusObj, "satellites_preempted", satPreemptedObj);
 
+		json_object *satVHFObj = json_object_new_int(stats->satellites_vhf);
+		if (!satVHFObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "satellites_vhf", satVHFObj);
+
+		json_object *satUHFObj = json_object_new_int(stats->satellites_uhf);
+		if (!satVHFObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "satellites_uhf", satUHFObj);
+
+		satellite_t *sat = sat_find_next();
+		if (sat) {
+			char buf[128];
+			tm_aos = *localtime(&sat->next_aos);
+			strftime(buf, sizeof(buf), "%d %B %Y - %I:%M%p %Z", &tm_aos);
+
+			json_object *satAOSObj = json_object_new_string(buf);
+			if (!satAOSObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "satellite_next_aos", satAOSObj);
+
+			json_object *satNameObj = json_object_new_string(sat->name);
+			if (!satNameObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "satellite_next_name", satNameObj);
+
+		}
 	}
 
 

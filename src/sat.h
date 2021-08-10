@@ -30,6 +30,11 @@
 #define MAX_TLE_SAT_NAME_LEN 	25 /** 24 chars + null */
 #define MAX_GS_NAME_LEN 		16
 
+#define LOW_VHF_BAND			30000000 /** 30 MHZ */
+#define HIGH_VHF_BAND			300000000 /** 300 MHZ */
+#define LOW_UHF_BAND			300000000 /** 300 MHZ */
+#define HIGH_UHF_BAND			3000000000 /** 3000 MHZ */
+
 typedef enum modulation_t {
 	MODULATION_BPSK,
 	MODULATION_AFSK,
@@ -96,5 +101,6 @@ observation_t *sat_get_observation(void);
 observation_t *sat_setup_observation(void);
 
 void sat_move_to_observation(void);
+satellite_t *sat_find_next(void);
 void sat_simul_time_step(time_t timestep);
 void sat_simul_time_set(time_t val);

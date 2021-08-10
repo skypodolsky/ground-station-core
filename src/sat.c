@@ -54,38 +54,48 @@ void sat_simul_time_set(time_t val)
 	LOG_V("Time travel to: %ld", _observation->sim_time);
 }
 
-void sat_move_to_observation()
+satellite_t *sat_find_next(void)
 {
 	time_t target = 0xFFFFFFFF;
-	time_t current_time;
-	satellite_t *sat;
-	observation_t *obs;
+	satellite_t *sat = NULL;
+	satellite_t *tmp = NULL;
+	observation_t *obs = _observation;
 
-	obs = _observation;
 	if (obs == NULL)
-		return;
-
-	current_time = time(NULL);
+		return NULL;
 
 	if (obs->active) {
-		target = obs->active->next_los;
-		LOG_I("Tracking active, moving to LOS");
-		goto out;
+		sat = obs->active;
+		return sat;
 	}
 
 	if (LIST_EMPTY(&obs->satellites_list))
-		return;
+		return NULL;
 
-	LIST_FOREACH(sat, &obs->satellites_list, entries) {
-		if (sat->next_aos < target)
-			target = sat->next_aos;
+	LIST_FOREACH(tmp, &obs->satellites_list, entries) {
+		if (tmp->next_aos < target) {
+			target = tmp->next_aos;
+			sat = tmp;
+		}
 	}
 
-	LOG_V("Closest AOS found: %d", target);
+	return sat;
+}
 
-out:
-	target -= 120;
-	obs->sim_time = (target - current_time);
+void sat_move_to_observation()
+{
+	time_t target;
+	satellite_t *next_sat;
+	observation_t *obs = _observation;
+
+	next_sat = sat_find_next();
+	if (!next_sat)
+		return;
+
+	LOG_V("Closest AOS found: %d", next_sat->next_aos);
+
+	target = next_sat->next_aos - 120;
+	obs->sim_time = (target - time(NULL));
 
 	LOG_V("Time travel to: %ld", target);
 }
@@ -585,15 +595,23 @@ reschedule:
 				(sat->next_aos < iter->next_los && sat->next_aos > iter->next_aos)) {
 
 			if (sat->priority < iter->priority) {
-				LOG_V("Overlap with %s found, %s rescheduled", iter->name, iter->name);
+				LOG_E("Overlap with %s found, %s rescheduled", iter->name, iter->name);
 				stats->satellites_preempted++;
 				sat_predict(iter);
 			} else {
-				LOG_V("Overlap with %s found, %s rescheduled", iter->name, sat->name);
+				LOG_E("Overlap with %s found, %s rescheduled", iter->name, sat->name);
 				stats->satellites_preempted++;
 				goto reschedule;
 			}
 		}
+	}
+
+	if (sat->frequency > LOW_VHF_BAND &&
+			sat->frequency < HIGH_VHF_BAND) {
+		stats->satellites_vhf++;
+	} else if (sat->frequency > LOW_UHF_BAND &&
+			sat->frequency < HIGH_UHF_BAND) {
+		stats->satellites_uhf++;
 	}
 
 	return ret;

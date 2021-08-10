@@ -11,3 +11,4 @@ global_stats_t *stats_get_instance(void)
 {
 	return &stats;
 }
+
