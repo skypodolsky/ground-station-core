@@ -13,7 +13,7 @@ All-in-one open-source utility for SDR-based satellite tracking
 - [x] JSON-based configuration
 - [x] Doppler compensation
 - [ ] Secure connection
-- [ ] Config file
+- [x] Config file
 
 ## Tests
 
@@ -22,7 +22,7 @@ All-in-one open-source utility for SDR-based satellite tracking
 - [x] Two weeks in autonomous beta testing
 - [ ] GOES geostationary satellites
 - [ ] Meteor satellite
-- [ ] Cubesats
+- [x] Cubesats (BPSK, FSK)
 
 # Installation
 
