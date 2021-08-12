@@ -24,7 +24,7 @@ All-in-one open-source utility for SDR-based satellite tracking
 - [ ] Meteor satellite
 - [x] Cubesats (BPSK, FSK)
 
-# Installation
+# Installation (Debian/Ubuntu)
 
 Install `libpredict`:
 ```
@@ -38,7 +38,7 @@ sudo make install
 
 Install prerequisites
 ```
-sudo apt-get install cmake gcc make predict libjson-c-dev hamlib-utils msmtp msmtp-mta
+sudo apt-get install cmake gcc make predict libjson-c-dev hamlib-utils msmtp msmtp-mta libxmlrpc-core-c3-dev libconfig-dev
 ```
 
 Configure msmtp
@@ -77,9 +77,33 @@ screen sudo rotctld -s 9600 -m 1004 -r /dev/ttyUSB0 -T 127.0.0.1 -t 8080 -vvvvv
 screen sudo rotctld -s 9600 -m 1005 -r /dev/ttyUSB1 -T 127.0.0.1 -t 8081 -vvvvv
 ```
 
+## Create a config file
+
+```
+// ground station parameters
+latitude			= 48.31237;
+longitude			= 7.44126;
+
+// rotctld ports
+azimuth-port		= 8080;
+elevation-port		= 8081;
+remote-addr			= "127.0.0.1";
+
+// inbound port
+request-port		= 25565;
+
+// logging
+verbosity			= 3;
+log-file			= "dump.log"
+
+// gnuradio parameters
+gnuradio-config		= <directory of a flow graph>;
+gnuradio-flowgraph	= <path of a GNU Radio flow graph>;
+```
+
 Start GSC:
 ```
-screen sudo ./gsc --verbosity 3 --remote-addr 127.0.0.1 --azimuth-port 8080 --elevation-port 8081 --request-port 25565 --latitude=48.31237 --longitude=7.44126
+screen gsc
 ```
 
 # Architecture
@@ -97,14 +121,60 @@ The architecture consists primarily of the following subsystems:
  - Block for scheduling satellites
  - Notification system
 
-<img src="img/img1.png" width="70%" height="70%">
+<img src="img/img10.png" width="70%" height="70%">
 
 Antenna rotators’ controllers are programmed by rotctld daemon. It is a part of Hamlib library, which is widely used as a software controlling unit for ground stations all around the world. It is a standard Linux-based utility that supports a lot of controllers of antenna rotators. Widely used for numerous prediction programs like GPredict, libpredict library for orbit prediction has found an application in this project too. For compatibility with all popular SDRs, SoapySDR library was chosen. It provides a hardware-independent C API for interaction, which is used to control an SDR. The system is configured from console (all static variables, f.e., latitude, longitude, azimuth offset compensation, etc.) and via network requests (dynamic configuration, f.e., tracking configuration). GSC uses a network server to make the second configuration type possible. To provide a reliable solution, libev library for network events handling has been integrated. Last but not least, libjson-c, a C-based library for parsing JSON requests, has also been chosen as a lightweight JSON parsing library.
 
 ## Configuration
 The utility operates in a fully autonomous mode, allowing it to pass the configuration through the REST API. Fully automated mode means that the system **does not require a network connection to operate**, it needs it only at the dynamic configuration stage. After the system has been configured, the connection isn’t crucial anymore. The configuration requests are transferred with HTTP or HTTPS protocols and invoked in JSON format. The example of JSON REST API POST request is provided below:
 
-<img src="img/img10.PNG" width="50%" height="50%">
+```
+{
+    "observation": {
+      "satellite" : [
+        {
+          "name": "NAYIF-1",
+          "modulation": "bpsk",
+          "bpsk_manchester": false,
+          "bpsk_differential": true,
+          "bpsk_short_preamble": false,
+          "bpsk_crc16": false,
+          "baud_rate": 1200,
+          "frequency": 145940000,
+          "bandwidth": 20000,
+          "priority": 2,
+          "min_elevation": 30.0
+        },
+        {
+          "name": "FUNCUBE-1",
+          "modulation": "bpsk",
+          "bpsk_manchester": false,
+          "bpsk_differential": true,
+          "bpsk_short_preamble": false,
+          "bpsk_crc16": false,
+          "baud_rate": 1200,
+          "frequency": 145935000,
+          "bandwidth": 20000,
+          "priority": 1,
+          "min_elevation": 30.0
+        },
+        {
+          "name": "JY1SAT",
+          "modulation": "bpsk",
+          "bpsk_manchester": false,
+          "bpsk_differential": true,
+          "bpsk_short_preamble": false,
+          "bpsk_crc16": false,
+          "baud_rate": 1200,
+          "frequency": 145840000,
+          "bandwidth": 20000,
+          "priority": 3,
+          "min_elevation": 30.0
+        }
+     ]
+    }
+}
+```
 
 The typical response:
 
