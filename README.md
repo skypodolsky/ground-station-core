@@ -204,7 +204,7 @@ As the new demodulated files are placed on the Web Server/FTP server, the author
 
 From the perspective of Linux, this task was solved with msmtp utility. There is a possibility to attach the file directly to the email, but this functionality isn’t implemented in the current release yet. Despite that, the notification can be done for multiple people/groups (this aspect is disclosed in the documentation).
 
-<img src="img/img8.png" width="100%" height="100%">
+<img src="img/img11.png" width="50%" height="50%">
 
 # Results
 
