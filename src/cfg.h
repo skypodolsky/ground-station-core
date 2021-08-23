@@ -46,6 +46,7 @@ typedef struct cfg_t {
 	double latitude;			/** GS latitude */
 	double longitude;			/** GS longitude */
 	bool dry_run;
+	int calibrate;
 } cfg_t;
 
 cfg_t *alloc_cfg(void);

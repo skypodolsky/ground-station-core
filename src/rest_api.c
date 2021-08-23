@@ -133,6 +133,48 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 			json_object_object_add(statusObj, "satellite_next_name", satNameObj);
 
 		}
+
+		if (obs->active) {
+			json_object *stateObj = json_object_new_string("tracking in progress");
+			if (!stateObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "state", stateObj);
+
+			satellite_t *active = obs->active;
+			time_t current_time = time(NULL) + obs->sim_time;
+
+			json_object *progressObj = json_object_new_int((current_time - active->next_aos) * 100 / (active->next_los - active->next_aos));
+			if (!progressObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "progress", progressObj);
+
+		} else {
+			json_object *stateObj = json_object_new_string("waiting");
+			if (!stateObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "state", stateObj);
+		}
+	} else {
+		json_object *stateObj = json_object_new_string("not set up");
+		if (!stateObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "state", stateObj);
 	}
 
 

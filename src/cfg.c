@@ -96,6 +96,12 @@ int cfg_parse(config_t *file_cfg, cfg_t *gsc_cfg)
 		ret = -1;
 	}
 
+	/** FIXME: not mandatory? */
+	if (!config_lookup_int(file_cfg, "calibrate", &gsc_cfg->calibrate)) {
+		LOG_E("No 'calibrate' setting in configuration file");
+		ret = -1;
+	}
+
 	if (!config_lookup_float(file_cfg, "latitude", &gsc_cfg->latitude)) {
 		LOG_E("No 'latitude' setting in configuration file");
 		ret = -1;

@@ -148,7 +148,7 @@ static double sat_apply_azimuth_offset(double az, double offset)
 static double sat_fix_azimuth(double az)
 {
 	if (az > AZ_MAX) {
-		LOG_V("Cannot set azimuth %f, restricting (wrong range)", az);
+		LOG_E("Cannot set azimuth %f, restricting (wrong range)", az);
 		az = AZ_MAX;
 	}
 
@@ -200,10 +200,15 @@ static void *sat_tracking_az(void *opt)
 			az = sat_reverse_azimuth(az);
 		}
 
+#if 0
 		if (az != sat_fix_azimuth(az)) {
 			LOG_V("Finishing azimuth thread due to reaching azimuth limit");
+			/** TODO: reconsider this break */
 			break;
 		}
+#else
+		az = sat_fix_azimuth(az);
+#endif
 
 		LOG_V("Az: %.02f", az);
 
@@ -342,12 +347,13 @@ static void *sat_scheduler(void *opt)
 
 				if (sat->next_aos > 0) {
 					if ((current_time > (sat->next_aos - 300)) && sat->parked == false) {
-						if (stats->satellites_tracked % 2 == 0) {
-							LOG_I("Performing the complete calibration\n");
+						if (obs->cfg->calibrate && stats->satellites_tracked % obs->cfg->calibrate == 0) {
+							LOG_I("Performing the complete calibration");
 							rotctl_calibrate(obs, true, true);
+							LOG_I("Calibration done");
 						}
 
-						LOG_I("Parking antenna for the receiving of %s", sat->name);
+						LOG_I("Parking antenna for the reception of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						rotctl_stop(obs);
 						if (!sat->zero_transition)
@@ -355,7 +361,7 @@ static void *sat_scheduler(void *opt)
 						else
 							rotctl_send_and_wait(obs, sat->aos_az, 180);
 
-						LOG_V("Parking done");
+						LOG_I("Parking done");
 						sat->parked = true;
 					}
 					if (current_time > sat->next_aos) {
