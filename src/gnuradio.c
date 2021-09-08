@@ -57,9 +57,9 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 			"sdr_BB_Gain=%d\n"
 			"sdr_LNA_Gain=%d\n",
 			sat->frequency,
-			DEF_CONF_SDR_IF_GAIN,
-			DEF_CONF_SDR_BB_GAIN,
-			DEF_CONF_SDR_LNA_GAIN);
+			cfg->if_gain,
+			cfg->bb_gain,
+			cfg->lna_gain);
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
 

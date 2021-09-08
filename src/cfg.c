@@ -112,5 +112,20 @@ int cfg_parse(config_t *file_cfg, cfg_t *gsc_cfg)
 		ret = -1;
 	}
 
+	if (!config_lookup_int(file_cfg, "sdr_bb_gain", &gsc_cfg->bb_gain)) {
+		LOG_E("No 'sdr_bb_gain' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "sdr_if_gain", &gsc_cfg->if_gain)) {
+		LOG_E("No 'sdr_if_gain' setting in configuration file");
+		ret = -1;
+	}
+
+	if (!config_lookup_int(file_cfg, "sdr_lna_gain", &gsc_cfg->lna_gain)) {
+		LOG_E("No 'sdr_lna_gain' setting in configuration file");
+		ret = -1;
+	}
+
 	return ret;
 }

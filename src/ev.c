@@ -97,7 +97,7 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 				return;
 			}
 		}
-		LOG_V("'Content-Length' is %d bytes", ev_handler.cont_length);
+		/* LOG_V("'Content-Length' is %d bytes", ev_handler.cont_length); */
 	}
 
 	char *payload = strstr(ev_handler.buf, "\r\n\r\n");

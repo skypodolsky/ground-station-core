@@ -43,10 +43,13 @@ typedef struct cfg_t {
 	int log_level;				/** log level 						*/
 	FILE *log_file;				/** file to log output in 			*/
 	netcli_t cli;				/** data for the remote connection	*/
-	double latitude;			/** GS latitude */
-	double longitude;			/** GS longitude */
-	bool dry_run;
-	int calibrate;
+	double latitude;			/** GS latitude 					*/
+	double longitude;			/** GS longitude 					*/
+	bool dry_run;				/** test run, don't save to a file 	*/
+	int calibrate;				/** recalibrate antenna once per 'calibrate' trackings (useful for some buggy antenna controllers) */
+	int bb_gain;
+	int if_gain;
+	int lna_gain;
 } cfg_t;
 
 cfg_t *alloc_cfg(void);
