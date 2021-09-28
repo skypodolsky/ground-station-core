@@ -23,37 +23,31 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/types.h>
 #include <arpa/inet.h>
 
 #include "sdr.h"
 #include "log.h"
+#include "cmd.h"
 #include "gnuradio.h"
 
 int sdr_start(satellite_t *sat, const char *filename)
 {
-	if (!sat) {
+	if (!sat || !sat->obs || !filename)
 		return -1;
-	}
 
 	observation_t *obs = sat->obs;
-	obs->sdr_pid = fork();
+	char *args[] = { DEF_CONF_PYTHON, (char *) obs->cfg->grc_flowgraph, NULL };
 
 	if (sdr_prepare_config(obs->cfg, sat, filename) == -1) {
 		return -1;
 	}
 
-	if (obs->sdr_pid == 0) {
-		char *program_name = DEF_CONF_PYTHON;
-		/** TODO: rewrite path */
-		char *args[] = { program_name, (char *) obs->cfg->grc_flowgraph };
-
-		LOG_I("Child's PID is %d\n", getpid());
-		execvp(program_name, args);
-	} else if (obs->sdr_pid == -1) {
-		LOG_E("Error on fork()\n");
+	obs->sdr_pid = request_cmd(DEF_CONF_PYTHON, args);
+	if (obs->sdr_pid == -1)
 		return -1;
-	}
+
+	LOG_I("Request program: pid %d", obs->sdr_pid);
+
 	return 0;
 }
 

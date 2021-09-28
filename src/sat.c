@@ -28,6 +28,7 @@
 #include "log.h"
 #include "sat.h"
 #include "sdr.h"
+#include "cmd.h"
 #include "stats.h"
 #include "rotctl.h"
 #include "helpers.h"
@@ -153,14 +154,6 @@ static double sat_fix_azimuth(double az)
 	}
 
 	return az;
-}
-
-static void sat_send_notification(const char *name, const char *filename)
-{
-	char buf[512]; /** filename can be up to 256 bytes */
-
-	snprintf(buf, sizeof(buf), "gsc_notify.sh '%s' '%s'", name, filename);
-	system(buf);
 }
 
 static void *sat_tracking_az(void *opt)
@@ -302,7 +295,6 @@ static void *sat_tracking_doppler(void *opt)
 		if (obs->cfg->dry_run == false) {
 			LOG_I("Doppler compensation: %f Hz\n", shift);
 			sdr_set_freq(obs->active->frequency + shift - 12000);
-			/* sdr_set_freq(obs->active->frequency); */
 		}
 
 		usleep(time_delay);
@@ -392,6 +384,10 @@ static void *sat_scheduler(void *opt)
 			space_replace(filename);
 
 			if (obs->cfg->dry_run == false) {
+				if ((pre_doit(obs)) == -1) {
+					LOG_E("Error on pre-do-it");
+				}
+
 				if (sdr_start(obs->active, filename) == -1) {
 					LOG_E("Couldn't start SDR");
 				}
@@ -409,8 +405,11 @@ static void *sat_scheduler(void *opt)
 					LOG_E("Couldn't stop SDR");
 				}
 
+				if ((post_doit(obs)) == -1) {
+					LOG_E("Error on post-do-it");
+				}
+
 				stats->satellites_tracked++;
-				sat_send_notification(obs->active->name, filename);
 			}
 
 			if (sat_setup(obs->active) == -1) {
@@ -424,6 +423,7 @@ static void *sat_scheduler(void *opt)
 
 		sleep(1);
 	}
+
 	LOG_I("Scheduler terminated");
 	return NULL;
 }

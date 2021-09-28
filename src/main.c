@@ -130,6 +130,7 @@ int main(int argc, char **argv)
 	LOG_V("Elevation port:       %d", cfg->cli.elevation_port);
 	LOG_V("Controller IP:        %s", cfg->cli.remote_ip);
 	LOG_V("Request port:         %d", cfg->listen_port);
+	LOG_V("Command script:       %s", cfg->cmd_script);
 	LOG_V("GNU Radio config:     %s", cfg->grc_config);
 	LOG_V("GNU Radio flowgraph:  %s", cfg->grc_flowgraph);
 
