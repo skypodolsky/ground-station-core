@@ -339,6 +339,8 @@ static void *sat_scheduler(void *opt)
 
 				if (sat->next_aos > 0) {
 					if ((current_time > (sat->next_aos - 300)) && sat->parked == false) {
+						/* rotctl_stop(obs); */
+
 						if (obs->cfg->calibrate && stats->satellites_tracked % obs->cfg->calibrate == 0) {
 							LOG_I("Performing the complete calibration");
 							rotctl_calibrate(obs, true, true);
@@ -347,7 +349,6 @@ static void *sat_scheduler(void *opt)
 
 						LOG_I("Parking antenna for the reception of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
-						rotctl_stop(obs);
 						if (!sat->zero_transition)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
@@ -403,6 +404,14 @@ static void *sat_scheduler(void *opt)
 			if (obs->cfg->dry_run == false) {
 				if (sdr_stop(obs) == -1) {
 					LOG_E("Couldn't stop SDR");
+				}
+
+				if (obs->active->frequency > LOW_VHF_BAND &&
+						obs->active->frequency < HIGH_VHF_BAND) {
+					stats->satellites_vhf++;
+				} else if (obs->active->frequency > LOW_UHF_BAND &&
+						obs->active->frequency < HIGH_UHF_BAND) {
+					stats->satellites_uhf++;
 				}
 
 				if ((post_doit(obs)) == -1) {
@@ -612,14 +621,6 @@ reschedule:
 		}
 	}
 
-	if (sat->frequency > LOW_VHF_BAND &&
-			sat->frequency < HIGH_VHF_BAND) {
-		stats->satellites_vhf++;
-	} else if (sat->frequency > LOW_UHF_BAND &&
-			sat->frequency < HIGH_UHF_BAND) {
-		stats->satellites_uhf++;
-	}
-
 	return ret;
 }
 
@@ -704,6 +705,7 @@ static int sat_clear_all(observation_t *obs)
 	while (!LIST_EMPTY(&obs->satellites_list)) {
 		sat = LIST_FIRST(&obs->satellites_list);
 		predict_destroy_orbital_elements(sat->orbital_elements);
+		free((void *) sat->network_addr);
 		LIST_REMOVE(sat, entries);
 		free(sat);
 	}

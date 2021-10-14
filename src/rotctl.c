@@ -105,8 +105,10 @@ int rotctl_stop(observation_t *obs)
 
 	write(obs->cfg->cli.azimuth_conn_fd, buf, strlen(buf));
 	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
+	/* LOG_I("rxbuf1=%s", rxbuf); */
 	write(obs->cfg->cli.elevation_conn_fd, buf, strlen(buf));
 	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
+	/* LOG_I("rxbuf2=%s", rxbuf); */
 
 	LOG_V("rotctl_stop() command done");
 	return ret;

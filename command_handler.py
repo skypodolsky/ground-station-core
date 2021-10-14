@@ -53,7 +53,7 @@ def send_email_notification(auth_file, attachments=[]):
     msg["From"] = client_login
     msg["Subject"] = subject
 
-    body = "Hi there, sending this email from Python!"
+    body = "Hi there, please find the results for another satellite!"
     msg.attach(MIMEText(body, "plain"))
 
     for f in attachments or []:
@@ -142,10 +142,10 @@ def action_pre_doit(args):
 def action_post_doit(args):
     print('== post doit ==')
     today = date.today()
-    files = glob.glob('*.dat')
+    files = glob.glob('*GMT.dat')
     send_email_notification('/etc/gsc/email.cfg', files)
-    os.system('mv -vf *.dat ' + RESULTS_PREFIX + str(today) + '/')
-    os.system('mv -vf *.raw ' + RESULTS_PREFIX + str(today) + '/')
+    os.system('mv -vf *GMT.dat ' + RESULTS_PREFIX + str(today) + '/')
+    os.system('mv -vf *GMT.raw ' + RESULTS_PREFIX + str(today) + '/')
     return
 
 actions = {

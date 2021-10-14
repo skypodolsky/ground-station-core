@@ -66,11 +66,11 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 	snprintf(cfg_line, sizeof(cfg_line), 	"[main]\n"
 			"main_LPF_Cutoff_Freq=%d\n"
 			"main_Network_Stream_Address=%s\n"
-			"main_Network_Stream_Port=%s\n"
+			"main_Network_Stream_Port=%d\n"
 			"main_Result_File_Prefix=%s\n",
 			sat->bandwidth,
-			DEF_CONF_NETWORK_STREAM_ADDR,
-			DEF_CONF_NETWORK_STREAM_PORT,
+			sat->network_addr,
+			sat->network_port,
 			filename);
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
@@ -83,34 +83,35 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
 
+	snprintf(cfg_line, sizeof(cfg_line), "modulation_Short_Frames=%d\n"
+										 "modulation_G3RUH=%d\n"
+										 "modulation_CRC16=%d\n",
+			sat->shortFrames,
+			sat->g3ruh,
+			sat->crc16);
+
+	fwrite(cfg_line, strlen(cfg_line), 1, fd);
+
 	switch (sat->modulation) {
 		case MODULATION_BPSK:
 			snprintf(cfg_line, sizeof(cfg_line), "modulation_BPSK_Manchester=%d\n"
-					"modulation_BPSK_Differential=%d\n"
-					"modulation_BPSK_Short_Preamb=%d\n"
-					"modulation_BPSK_CRC16=%d\n",
+					"modulation_BPSK_Differential=%d\n",
 					sat->bpskManchester,
-					sat->bpskDifferential,
-					sat->bpskShort,
-					sat->bpskCRC16);
+					sat->bpskDifferential);
 
 			fwrite(cfg_line, strlen(cfg_line), 1, fd);
 			break;
 		case MODULATION_AFSK:
 			snprintf(cfg_line, sizeof(cfg_line), "modulation_AFSK_Audio_Carrier_Freq=%d\n"
-					"modulation_AFSK_Deviation=%d\n"
-					"modulation_G3RUH=%d\n",
+					"modulation_AFSK_Deviation=%d\n",
 					sat->afskAFC,
-					sat->afskDeviation,
-					sat->afskG3RUH);
+					sat->afskDeviation);
 
 			fwrite(cfg_line, strlen(cfg_line), 1, fd);
 			break;
 		case MODULATION_FSK:
-			snprintf(cfg_line, sizeof(cfg_line), "modulation_FSK_Sub_Audio=%d\n"
-					"modulation_G3RUH=%d\n",
-					sat->fskSubAudio,
-					sat->fskG3RUH);
+			snprintf(cfg_line, sizeof(cfg_line), "modulation_FSK_Sub_Audio=%d\n",
+					sat->fskSubAudio);
 
 			fwrite(cfg_line, strlen(cfg_line), 1, fd);
 			break;

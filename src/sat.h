@@ -50,20 +50,27 @@ typedef struct satellite_t {
 
 	/** modulation */
   	modulation_t modulation;
+	const char *network_addr;
+	int network_port;
 	int baudRate;
 
 	/** bpsk */
 	bool bpskManchester;
 	bool bpskDifferential;
-	bool bpskShort;
-	bool bpskCRC16;
+
 	/** afsk */
 	int afskDeviation;
-	bool afskG3RUH;
 	int afskAFC; /** audio frequency carrier */
+
 	/** fsk */
 	bool fskSubAudio;
-	bool fskG3RUH;
+
+	/** deframing */
+	/** TODO: implement */
+	int syncword_threshold;
+	bool shortFrames;
+	bool g3ruh;
+	bool crc16;
 
 	double min_elevation;
 	double max_elevation;

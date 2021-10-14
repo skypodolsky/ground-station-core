@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <strings.h>
+#include <errno.h>
 #include <json-c/json.h>
 
 #include "ev.h"
@@ -71,6 +72,7 @@ void _ev_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 		ev_handler.buf_idx = 0;
 		ev_handler.cont_length = 0;
 		ev_io_stop(ev_handler.loop, watcher);
+		close(watcher->fd);
 		free(watcher);
 		return;
 	}
@@ -166,7 +168,7 @@ void _ev_accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-	struct ev_io *w_client = (struct ev_io*) malloc(sizeof(struct ev_io));
+	struct ev_io *w_client = (struct ev_io *) malloc(sizeof(struct ev_io));
 
 	if (EV_ERROR & revents) {
 		LOG_I("got invalid event");
@@ -175,7 +177,7 @@ void _ev_accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
 	ev_handler.client_sd = accept(watcher->fd, (struct sockaddr *)&client_addr, &client_len);
 	if (ev_handler.client_sd < 0) {
-		LOG_E("accept error");
+		LOG_E("accept error, %s", strerror(errno));
 		return;
 	}
 	/* fcntl(ev_handler.client_sd, F_SETFL, O_NONBLOCK); */
