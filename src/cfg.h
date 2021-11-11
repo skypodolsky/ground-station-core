@@ -40,6 +40,7 @@ typedef struct cfg_t {
 	char version[64];			/** utility version 				*/
 	const char *grc_config;		/** GNU Radio config				*/
 	const char *grc_flowgraph;	/** GNU Radio flowgraph				*/
+	const char *cmd_script;		/** python service script			*/
 	int log_level;				/** log level 						*/
 	FILE *log_file;				/** file to log output in 			*/
 	netcli_t cli;				/** data for the remote connection	*/

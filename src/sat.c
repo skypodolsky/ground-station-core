@@ -28,6 +28,7 @@
 #include "log.h"
 #include "sat.h"
 #include "sdr.h"
+#include "cmd.h"
 #include "stats.h"
 #include "rotctl.h"
 #include "helpers.h"
@@ -155,14 +156,6 @@ static double sat_fix_azimuth(double az)
 	return az;
 }
 
-static void sat_send_notification(const char *name, const char *filename)
-{
-	char buf[512]; /** filename can be up to 256 bytes */
-
-	snprintf(buf, sizeof(buf), "gsc_notify.sh '%s' '%s'", name, filename);
-	system(buf);
-}
-
 static void *sat_tracking_az(void *opt)
 {
 	int time_delay = 50000;
@@ -258,6 +251,7 @@ static void *sat_tracking_el(void *opt)
 		}
 
 		LOG_V("El: %.02f", el);
+
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
 	} while (current_time < obs->active->next_los);
@@ -301,8 +295,11 @@ static void *sat_tracking_doppler(void *opt)
 
 		if (obs->cfg->dry_run == false) {
 			LOG_I("Doppler compensation: %f Hz\n", shift);
-			sdr_set_freq(obs->active->frequency + shift - 12000);
-			/* sdr_set_freq(obs->active->frequency); */
+			if (obs->active->modulation != MODULATION_FSK)
+				sdr_set_freq(obs->active->frequency + shift - 12000);
+			else
+				/** TODO: This is terrible and needs to be fixed */
+				sdr_set_freq(obs->active->frequency + shift);
 		}
 
 		usleep(time_delay);
@@ -327,8 +324,18 @@ static void *sat_scheduler(void *opt)
 	/** always valid */
 	stats = stats_get_instance();
 
+	stats->last_azimuth = rotctl_get_azimuth(obs);
+	stats->last_elevation = rotctl_get_elevation(obs);
+
+	LOG_I("Current azimuth: %f", stats->last_azimuth);
+	LOG_I("Current elevation: %f", stats->last_elevation);
+
 	LOG_I("Scheduler started");
 	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
+
+	/** the default state */
+	stats->state = GSC_STATE_WAITING;
+
 	while (obs->sch_terminate == false) {
 
 		time(&current_time);
@@ -347,27 +354,34 @@ static void *sat_scheduler(void *opt)
 
 				if (sat->next_aos > 0) {
 					if ((current_time > (sat->next_aos - 300)) && sat->parked == false) {
+						/* rotctl_stop(obs); */
+
 						if (obs->cfg->calibrate && stats->satellites_tracked % obs->cfg->calibrate == 0) {
 							LOG_I("Performing the complete calibration");
+							stats->state = GSC_STATE_CALIBRATING;
 							rotctl_calibrate(obs, true, true);
 							LOG_I("Calibration done");
 						}
 
+						stats->state = GSC_STATE_PARKING;
 						LOG_I("Parking antenna for the reception of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
-						rotctl_stop(obs);
+
 						if (!sat->zero_transition)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
 							rotctl_send_and_wait(obs, sat->aos_az, 180);
 
+						stats->state = GSC_STATE_WAITING;
 						LOG_I("Parking done");
 						sat->parked = true;
 					}
+
 					if (current_time > sat->next_aos) {
 
 						obs->active = sat;
 
+						stats->state = GSC_STATE_TRACKING;
 						LOG_I("Tracking started: %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						break;
@@ -392,6 +406,10 @@ static void *sat_scheduler(void *opt)
 			space_replace(filename);
 
 			if (obs->cfg->dry_run == false) {
+				if ((pre_doit(obs)) == -1) {
+					LOG_E("Error on pre-do-it");
+				}
+
 				if (sdr_start(obs->active, filename) == -1) {
 					LOG_E("Couldn't start SDR");
 				}
@@ -409,14 +427,26 @@ static void *sat_scheduler(void *opt)
 					LOG_E("Couldn't stop SDR");
 				}
 
+				if (obs->active->frequency > LOW_VHF_BAND &&
+						obs->active->frequency < HIGH_VHF_BAND) {
+					stats->satellites_vhf++;
+				} else if (obs->active->frequency > LOW_UHF_BAND &&
+						obs->active->frequency < HIGH_UHF_BAND) {
+					stats->satellites_uhf++;
+				}
+
+				if ((post_doit(obs)) == -1) {
+					LOG_E("Error on post-do-it");
+				}
+
 				stats->satellites_tracked++;
-				sat_send_notification(obs->active->name, filename);
 			}
 
 			if (sat_setup(obs->active) == -1) {
 				LOG_E("Error while rescheduling %s", obs->active->name);
 			}
 
+			stats->state = GSC_STATE_WAITING;
 			obs->active->parked = false;
 			LOG_V("Rescheduled %s", obs->active->name);
 			obs->active = NULL;
@@ -424,6 +454,7 @@ static void *sat_scheduler(void *opt)
 
 		sleep(1);
 	}
+
 	LOG_I("Scheduler terminated");
 	return NULL;
 }
@@ -612,14 +643,6 @@ reschedule:
 		}
 	}
 
-	if (sat->frequency > LOW_VHF_BAND &&
-			sat->frequency < HIGH_VHF_BAND) {
-		stats->satellites_vhf++;
-	} else if (sat->frequency > LOW_UHF_BAND &&
-			sat->frequency < HIGH_UHF_BAND) {
-		stats->satellites_uhf++;
-	}
-
 	return ret;
 }
 
@@ -704,6 +727,7 @@ static int sat_clear_all(observation_t *obs)
 	while (!LIST_EMPTY(&obs->satellites_list)) {
 		sat = LIST_FIRST(&obs->satellites_list);
 		predict_destroy_orbital_elements(sat->orbital_elements);
+		free((void *) sat->network_addr);
 		LIST_REMOVE(sat, entries);
 		free(sat);
 	}

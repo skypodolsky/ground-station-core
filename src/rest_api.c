@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <json-c/json.h>
@@ -108,6 +109,25 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 
 		json_object_object_add(statusObj, "satellites_uhf", satUHFObj);
 
+		json_object *lastAzObj = json_object_new_double(roundf(stats->last_azimuth * 100) / 100);
+		if (!lastAzObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "azimuth", lastAzObj);
+
+
+		json_object *lastElObj = json_object_new_double(roundf(stats->last_elevation * 100) / 100);
+		if (!lastElObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "elevation", lastElObj);
+
 		satellite_t *sat = sat_find_next();
 		if (sat) {
 			char buf[128];
@@ -134,20 +154,51 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 
 		}
 
-		if (obs->active) {
-			json_object *stateObj = json_object_new_string("tracking in progress");
-			if (!stateObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
+		json_object *stateCodeObj = json_object_new_int(stats->state);
+		if (!stateCodeObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
 
-			json_object_object_add(statusObj, "state", stateObj);
+		json_object_object_add(statusObj, "state_code", stateCodeObj);
 
-			satellite_t *active = obs->active;
-			time_t current_time = time(NULL) + obs->sim_time;
+		char *state = NULL;
+		int progress = 0;
 
-			json_object *progressObj = json_object_new_int((current_time - active->next_aos) * 100 / (active->next_los - active->next_aos));
+		switch (stats->state) {
+			satellite_t *active;
+			time_t current_time;
+
+			case GSC_STATE_CALIBRATING:
+				state = "calibrating";
+				break;
+			case GSC_STATE_PARKING:
+				state = "parking";
+				break;
+			case GSC_STATE_TRACKING:
+				active = obs->active;
+				current_time = time(NULL) + obs->sim_time;
+				progress = (current_time - active->next_aos) * 100 / (active->next_los - active->next_aos);
+				state = "tracking";
+				break;
+			default:
+				state = "waiting";
+				break;
+		}
+
+		json_object *stateObj = json_object_new_string(state);
+		if (!stateObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "state", stateObj);
+
+		/** also add a progress */
+		if (stats->state == GSC_STATE_TRACKING) {
+			json_object *progressObj = json_object_new_int(progress);
 			if (!progressObj) {
 				*error = "Out of memory";
 				ret = -1;
@@ -155,18 +206,17 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 			}
 
 			json_object_object_add(statusObj, "progress", progressObj);
-
-		} else {
-			json_object *stateObj = json_object_new_string("waiting");
-			if (!stateObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
-
-			json_object_object_add(statusObj, "state", stateObj);
 		}
 	} else {
+		json_object *stateCodeObj = json_object_new_int(GSC_STATE_NOT_CONFIGURED);
+		if (!stateCodeObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "state_code", stateCodeObj);
+
 		json_object *stateObj = json_object_new_string("not set up");
 		if (!stateObj) {
 			*error = "Out of memory";
@@ -374,6 +424,23 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
+			sat->network_addr = strdup(json_get_string_by_key(jsatellitePart, "network_addr"));
+			if (!sat->network_addr) {
+				*error = "'/observation/satellite/network_addr' string is not specified!";
+				ret = -1;
+				goto out;
+			}
+
+			LOG_V("Network stream address: [ %s ]", sat->network_addr);
+
+			if (!json_get_int_by_key(jsatellitePart, "network_port", &sat->network_port)) {
+				*error = "'/observation/satellite/network_port' not specified";
+				ret = -1;
+				goto out;
+			}
+
+			LOG_V("Network stream port: [ %d ]", sat->network_port);
+
 			if (!json_get_int_by_key(jsatellitePart, "baud_rate", &sat->baudRate)) {
 				*error = "'/observation/satellite/baud_rate' not specified";
 				ret = -1;
@@ -389,6 +456,39 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 			}
 
 			LOG_V("Bandwidth: [ %d ]", sat->bandwidth);
+
+			/** optional */
+			json_object_object_get_ex(jsatellitePart, "short_frames", &valObj);
+
+			if (json_object_get_type(valObj) == json_type_boolean) {
+				sat->shortFrames = json_object_get_boolean(valObj);
+			} else {
+				sat->shortFrames = false;
+			}
+
+			LOG_V("Short Frames: [ %d ]", !!sat->shortFrames);
+
+			/** optional */
+			json_object_object_get_ex(jsatellitePart, "crc16", &valObj);
+
+			if (json_object_get_type(valObj) == json_type_boolean) {
+				sat->crc16 = json_object_get_boolean(valObj);
+			} else {
+				sat->crc16 = false;
+			}
+
+			LOG_V("CRC16: [ %d ]", !!sat->crc16);
+
+			/** optional */
+			json_object_object_get_ex(jsatellitePart, "g3ruh", &valObj);
+
+			if (json_object_get_type(valObj) == json_type_boolean) {
+				sat->g3ruh = json_object_get_boolean(valObj);
+			} else {
+				sat->g3ruh = false;
+			}
+
+			LOG_V("G3RUH: [ %d ]", !!sat->g3ruh);
 
 			if (streq(satModulation, "bpsk")) {
 				sat->modulation = MODULATION_BPSK;
@@ -424,38 +524,6 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 				LOG_V("BPSK Differential: [ %d ]", !!sat->bpskDifferential);
 
-				if (!json_object_object_get_ex(jsatellitePart, "bpsk_short_preamble", &valObj)) {
-					*error = "'/observation/satellite/bpsk_short_preamble' object is missing";
-					ret = -1;
-					goto out;
-				}
-
-				if (json_object_get_type(valObj) == json_type_boolean) {
-					sat->bpskShort = json_object_get_boolean(valObj);
-				} else {
-					*error = "'/observation/satellite/bpsk_short_preamble' isn't boolean";
-					ret = -1;
-					goto out;
-				}
-
-				LOG_V("BPSK Short Preamble: [ %d ]", !!sat->bpskShort);
-
-				if (!json_object_object_get_ex(jsatellitePart, "bpsk_crc16", &valObj)) {
-					*error = "'/observation/satellite/bpsk_crc16' object is missing";
-					ret = -1;
-					goto out;
-				}
-
-				if (json_object_get_type(valObj) == json_type_boolean) {
-					sat->bpskCRC16 = json_object_get_boolean(valObj);
-				} else {
-					*error = "'/observation/satellite/bpsk_crc16' isn't boolean";
-					ret = -1;
-					goto out;
-				}
-
-				LOG_V("BPSK CRC16: [ %d ]", !!sat->bpskCRC16);
-
 			} else if (streq(satModulation, "afsk")) {
 				sat->modulation = MODULATION_AFSK;
 				if (!json_get_int_by_key(jsatellitePart, "afsk_audio_freq_carrier", &sat->afskAFC)) {
@@ -473,22 +541,6 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				}
 
 				LOG_V("AFSK Deviation: [ %d ]", sat->afskDeviation);
-
-				if (!json_object_object_get_ex(jsatellitePart, "afsk_g3ruh", &valObj)) {
-					*error = "'/observation/satellite/afsk_g3ruh' object is missing";
-					ret = -1;
-					goto out;
-				}
-
-				if (json_object_get_type(valObj) == json_type_boolean) {
-					sat->afskG3RUH = json_object_get_boolean(valObj);
-				} else {
-					*error = "'/observation/satellite/afsk_g3ruh' isn't boolean";
-					ret = -1;
-					goto out;
-				}
-
-				LOG_V("FSK G3RUH: [ %d ]", !!sat->afskG3RUH);
 
 			} else if (streq(satModulation, "fsk")) {
 				sat->modulation = MODULATION_FSK;
@@ -508,22 +560,6 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				}
 
 				LOG_V("FSK subaudio: [ %d ]", !!sat->fskSubAudio);
-
-				if (!json_object_object_get_ex(jsatellitePart, "fsk_g3ruh", &valObj)) {
-					*error = "'/observation/satellite/fsk_g3ruh' object is missing";
-					ret = -1;
-					goto out;
-				}
-
-				if (json_object_get_type(valObj) == json_type_boolean) {
-					sat->fskG3RUH = json_object_get_boolean(valObj);
-				} else {
-					*error = "'/observation/satellite/fsk_g3ruh' isn't boolean";
-					ret = -1;
-					goto out;
-				}
-
-				LOG_V("FSK G3RUH: [ %d ]", !!sat->fskG3RUH);
 			}
 			else {
 				*error = "'/observation/satellite/modulation' only 'bpsk', 'fsk' and 'afsk' are supported";
@@ -577,6 +613,69 @@ out:
 	return ret;
 }
 
+static int rest_api_get_antenna_position(char *payload, char **reply_buf, const char **error)
+{
+	return rest_api_get_status(payload, reply_buf, error);
+}
+
+static int rest_api_set_antenna_position(char *payload, char **reply_buf, const char **error)
+{
+	int ret;
+	double azimuth = false;
+	double elevation = false;
+	struct json_object *jObj;
+	struct json_object *positionObj;
+	global_stats_t *stats;
+	observation_t *observation;
+
+	ret = 0;
+	stats = stats_get_instance();
+	observation = sat_get_observation();
+	if (!observation) {
+		*error = "No observation is set up";
+		return -1;
+	}
+
+	LOG_V("Set antenna position REST API started");
+
+	LOG_V("Parsing JSON request...");
+	jObj = json_tokener_parse(payload);
+	if (!jObj) {
+		*error = "Couldn't parse JSON request";
+		return -1;
+	}
+
+	if (!json_object_object_get_ex(jObj, "position", &positionObj)) {
+		*error = "'/position' object is missing";
+		ret = -1;
+		goto out;
+	}
+
+	if (!json_get_double_by_key(positionObj, "azimuth", &azimuth)) {
+		*error = "'/position/azimuth' not specified";
+		ret = -1;
+		goto out;
+	}
+
+	if (!json_get_double_by_key(positionObj, "elevation", &elevation)) {
+		*error = "'/position/elevation' not specified";
+		ret = -1;
+		goto out;
+	}
+
+	stats->last_azimuth = azimuth;
+	stats->last_elevation = elevation;
+
+	LOG_I("Moving antenna to az: %f, el: %f", azimuth, elevation);
+
+	rotctl_send_and_wait(observation, azimuth, elevation);
+	LOG_V("Set antenna position done");
+
+out:
+	json_object_put(jObj);
+	return ret;
+}
+
 static int rest_api_get_calibration(char *payload, char **reply_buf, const char **error)
 {
 	return rest_api_get_status(payload, reply_buf, error);
@@ -601,7 +700,7 @@ static int rest_api_set_calibration(char *payload, char **reply_buf, const char 
 		return -1;
 	}
 
-	LOG_V("parsing JSON request...");
+	LOG_V("Parsing JSON request...");
 	jObj = json_tokener_parse(payload);
 	if (!jObj) {
 		*error = "Couldn't parse JSON request";
@@ -649,6 +748,8 @@ static rest_api_t rest_api[] = {
 	{ "/observation", REST_API_TYPE_POST, rest_api_set_observation },
 	{ "/calibration", REST_API_TYPE_GET, rest_api_get_calibration},
 	{ "/calibration", REST_API_TYPE_POST, rest_api_set_calibration},
+	{ "/antenna", REST_API_TYPE_POST, rest_api_set_antenna_position},
+	{ "/antenna", REST_API_TYPE_GET, rest_api_get_antenna_position}
 };
 
 rest_api_type_t rest_api_get_type(const char *type_str)

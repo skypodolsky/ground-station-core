@@ -71,6 +71,11 @@ int cfg_parse(config_t *file_cfg, cfg_t *gsc_cfg)
 		ret = -1;
 	}
 
+	if (!config_lookup_string(file_cfg, "command-script", &gsc_cfg->cmd_script)) {
+		LOG_E("No 'command-script' setting in configuration file");
+		ret = -1;
+	}
+
 	if (!config_lookup_int(file_cfg, "azimuth-port", &gsc_cfg->cli.azimuth_port)) {
 		LOG_E("No 'azimuth-port' setting in configuration file");
 		ret = -1;
