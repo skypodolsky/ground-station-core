@@ -154,29 +154,51 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 
 		}
 
-		if (obs->active) {
-			json_object *stateCodeObj = json_object_new_int(GSC_STATE_TRACKING);
-			if (!stateCodeObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
+		json_object *stateCodeObj = json_object_new_int(stats->state);
+		if (!stateCodeObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
 
-			json_object_object_add(statusObj, "state_code", stateCodeObj);
+		json_object_object_add(statusObj, "state_code", stateCodeObj);
 
-			json_object *stateObj = json_object_new_string("tracking in progress");
-			if (!stateObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
+		char *state = NULL;
+		int progress = 0;
 
-			json_object_object_add(statusObj, "state", stateObj);
+		switch (stats->state) {
+			satellite_t *active;
+			time_t current_time;
 
-			satellite_t *active = obs->active;
-			time_t current_time = time(NULL) + obs->sim_time;
+			case GSC_STATE_CALIBRATING:
+				state = "calibrating";
+				break;
+			case GSC_STATE_PARKING:
+				state = "parking";
+				break;
+			case GSC_STATE_TRACKING:
+				active = obs->active;
+				current_time = time(NULL) + obs->sim_time;
+				progress = (current_time - active->next_aos) * 100 / (active->next_los - active->next_aos);
+				state = "tracking";
+				break;
+			default:
+				state = "waiting";
+				break;
+		}
 
-			json_object *progressObj = json_object_new_int((current_time - active->next_aos) * 100 / (active->next_los - active->next_aos));
+		json_object *stateObj = json_object_new_string(state);
+		if (!stateObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "state", stateObj);
+
+		/** also add a progress */
+		if (stats->state == GSC_STATE_TRACKING) {
+			json_object *progressObj = json_object_new_int(progress);
 			if (!progressObj) {
 				*error = "Out of memory";
 				ret = -1;
@@ -184,24 +206,6 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 			}
 
 			json_object_object_add(statusObj, "progress", progressObj);
-		} else {
-			json_object *stateCodeObj = json_object_new_int(GSC_STATE_WAITING);
-			if (!stateCodeObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
-
-			json_object_object_add(statusObj, "state_code", stateCodeObj);
-
-			json_object *stateObj = json_object_new_string("waiting");
-			if (!stateObj) {
-				*error = "Out of memory";
-				ret = -1;
-				goto out;
-			}
-
-			json_object_object_add(statusObj, "state", stateObj);
 		}
 	} else {
 		json_object *stateCodeObj = json_object_new_int(GSC_STATE_NOT_CONFIGURED);

@@ -333,6 +333,9 @@ static void *sat_scheduler(void *opt)
 	LOG_I("Scheduler started");
 	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
 
+	/** the default state */
+	stats->state = GSC_STATE_WAITING;
+
 	while (obs->sch_terminate == false) {
 
 		time(&current_time);
@@ -355,10 +358,12 @@ static void *sat_scheduler(void *opt)
 
 						if (obs->cfg->calibrate && stats->satellites_tracked % obs->cfg->calibrate == 0) {
 							LOG_I("Performing the complete calibration");
+							stats->state = GSC_STATE_CALIBRATING;
 							rotctl_calibrate(obs, true, true);
 							LOG_I("Calibration done");
 						}
 
+						stats->state = GSC_STATE_PARKING;
 						LOG_I("Parking antenna for the reception of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 
@@ -367,13 +372,16 @@ static void *sat_scheduler(void *opt)
 						else
 							rotctl_send_and_wait(obs, sat->aos_az, 180);
 
+						stats->state = GSC_STATE_WAITING;
 						LOG_I("Parking done");
 						sat->parked = true;
 					}
+
 					if (current_time > sat->next_aos) {
 
 						obs->active = sat;
 
+						stats->state = GSC_STATE_TRACKING;
 						LOG_I("Tracking started: %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 						break;
@@ -438,6 +446,7 @@ static void *sat_scheduler(void *opt)
 				LOG_E("Error while rescheduling %s", obs->active->name);
 			}
 
+			stats->state = GSC_STATE_WAITING;
 			obs->active->parked = false;
 			LOG_V("Rescheduled %s", obs->active->name);
 			obs->active = NULL;

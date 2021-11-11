@@ -120,8 +120,13 @@ int rotctl_calibrate(observation_t *obs, bool azimuth, bool elevation)
 	int ret;
 	char buf[32] = { 0 };
 	char rxbuf[4096] = { 0 };
+	global_stats_t *stats;
 
 	ret = 0;
+
+	stats = stats_get_instance();
+	stats->last_azimuth = 0;
+	stats->last_elevation = 0;
 
 	if (obs == NULL)
 		return -1;
