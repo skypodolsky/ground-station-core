@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <json-c/json.h>
@@ -108,6 +109,25 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 
 		json_object_object_add(statusObj, "satellites_uhf", satUHFObj);
 
+		json_object *lastAzObj = json_object_new_double(roundf(stats->last_azimuth * 100) / 100);
+		if (!lastAzObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "azimuth", lastAzObj);
+
+
+		json_object *lastElObj = json_object_new_double(roundf(stats->last_elevation * 100) / 100);
+		if (!lastElObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "elevation", lastElObj);
+
 		satellite_t *sat = sat_find_next();
 		if (sat) {
 			char buf[128];
@@ -135,6 +155,15 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 		}
 
 		if (obs->active) {
+			json_object *stateCodeObj = json_object_new_int(GSC_STATE_TRACKING);
+			if (!stateCodeObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "state_code", stateCodeObj);
+
 			json_object *stateObj = json_object_new_string("tracking in progress");
 			if (!stateObj) {
 				*error = "Out of memory";
@@ -155,8 +184,16 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 			}
 
 			json_object_object_add(statusObj, "progress", progressObj);
-
 		} else {
+			json_object *stateCodeObj = json_object_new_int(GSC_STATE_WAITING);
+			if (!stateCodeObj) {
+				*error = "Out of memory";
+				ret = -1;
+				goto out;
+			}
+
+			json_object_object_add(statusObj, "state_code", stateCodeObj);
+
 			json_object *stateObj = json_object_new_string("waiting");
 			if (!stateObj) {
 				*error = "Out of memory";
@@ -167,6 +204,15 @@ static int rest_api_get_status(char *payload, char **reply_buf, const char **err
 			json_object_object_add(statusObj, "state", stateObj);
 		}
 	} else {
+		json_object *stateCodeObj = json_object_new_int(GSC_STATE_NOT_CONFIGURED);
+		if (!stateCodeObj) {
+			*error = "Out of memory";
+			ret = -1;
+			goto out;
+		}
+
+		json_object_object_add(statusObj, "state_code", stateCodeObj);
+
 		json_object *stateObj = json_object_new_string("not set up");
 		if (!stateObj) {
 			*error = "Out of memory";
@@ -563,6 +609,69 @@ out:
 	return ret;
 }
 
+static int rest_api_get_antenna_position(char *payload, char **reply_buf, const char **error)
+{
+	return rest_api_get_status(payload, reply_buf, error);
+}
+
+static int rest_api_set_antenna_position(char *payload, char **reply_buf, const char **error)
+{
+	int ret;
+	double azimuth = false;
+	double elevation = false;
+	struct json_object *jObj;
+	struct json_object *positionObj;
+	global_stats_t *stats;
+	observation_t *observation;
+
+	ret = 0;
+	stats = stats_get_instance();
+	observation = sat_get_observation();
+	if (!observation) {
+		*error = "No observation is set up";
+		return -1;
+	}
+
+	LOG_V("Set antenna position REST API started");
+
+	LOG_V("Parsing JSON request...");
+	jObj = json_tokener_parse(payload);
+	if (!jObj) {
+		*error = "Couldn't parse JSON request";
+		return -1;
+	}
+
+	if (!json_object_object_get_ex(jObj, "position", &positionObj)) {
+		*error = "'/position' object is missing";
+		ret = -1;
+		goto out;
+	}
+
+	if (!json_get_double_by_key(positionObj, "azimuth", &azimuth)) {
+		*error = "'/position/azimuth' not specified";
+		ret = -1;
+		goto out;
+	}
+
+	if (!json_get_double_by_key(positionObj, "elevation", &elevation)) {
+		*error = "'/position/elevation' not specified";
+		ret = -1;
+		goto out;
+	}
+
+	stats->last_azimuth = azimuth;
+	stats->last_elevation = elevation;
+
+	LOG_I("Moving antenna to az: %f, el: %f", azimuth, elevation);
+
+	rotctl_send_and_wait(observation, azimuth, elevation);
+	LOG_V("Set antenna position done");
+
+out:
+	json_object_put(jObj);
+	return ret;
+}
+
 static int rest_api_get_calibration(char *payload, char **reply_buf, const char **error)
 {
 	return rest_api_get_status(payload, reply_buf, error);
@@ -587,7 +696,7 @@ static int rest_api_set_calibration(char *payload, char **reply_buf, const char 
 		return -1;
 	}
 
-	LOG_V("parsing JSON request...");
+	LOG_V("Parsing JSON request...");
 	jObj = json_tokener_parse(payload);
 	if (!jObj) {
 		*error = "Couldn't parse JSON request";
@@ -635,6 +744,8 @@ static rest_api_t rest_api[] = {
 	{ "/observation", REST_API_TYPE_POST, rest_api_set_observation },
 	{ "/calibration", REST_API_TYPE_GET, rest_api_get_calibration},
 	{ "/calibration", REST_API_TYPE_POST, rest_api_set_calibration},
+	{ "/antenna", REST_API_TYPE_POST, rest_api_set_antenna_position},
+	{ "/antenna", REST_API_TYPE_GET, rest_api_get_antenna_position}
 };
 
 rest_api_type_t rest_api_get_type(const char *type_str)

@@ -30,6 +30,7 @@
 
 #include "log.h"
 #include "sat.h"
+#include "stats.h"
 #include "rotctl.h"
 
 int rotctl_open(observation_t *obs, rot_type_t type)
@@ -143,12 +144,72 @@ int rotctl_calibrate(observation_t *obs, bool azimuth, bool elevation)
 	return ret;
 }
 
+float rotctl_extract_value(char *string)
+{
+	char *substr = strstr(string, "=");
+
+	if (!substr)
+		return 0;
+
+	substr++;
+
+	char *endstr = strchr(substr, ' ');
+	if (!endstr)
+		return 0;
+
+	*endstr = 0;
+
+	return strtof(substr, NULL);
+}
+
+float rotctl_get_azimuth(observation_t *obs)
+{
+	char az_buf[32] = { 0 };
+	char rxbuf[4096] = { 0 };
+
+	if (obs == NULL)
+		return -1;
+
+	snprintf(az_buf, sizeof(az_buf), "w A\n");
+
+	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
+
+	write(obs->cfg->cli.azimuth_conn_fd, az_buf, strlen(az_buf));
+	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
+
+	return rotctl_extract_value(rxbuf);
+}
+
+float rotctl_get_elevation(observation_t *obs)
+{
+	char el_buf[32] = { 0 };
+	char rxbuf[4096] = { 0 };
+
+	if (obs == NULL)
+		return -1;
+
+	snprintf(el_buf, sizeof(el_buf), "w E\n");
+
+	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
+
+	write(obs->cfg->cli.elevation_conn_fd, el_buf, strlen(el_buf));
+	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
+
+	return rotctl_extract_value(rxbuf);
+}
+
+
 int rotctl_send_and_wait(observation_t *obs, double az, double el)
 {
 	int ret;
 	char az_buf[32] = { 0 };
 	char el_buf[32] = { 0 };
 	char rxbuf[4096] = { 0 };
+	global_stats_t *stats;
+
+	stats = stats_get_instance();
+	stats->last_azimuth = az;
+	stats->last_elevation = el;
 
 	ret = 0;
 
@@ -193,11 +254,21 @@ static int rotctl_send(observation_t *obs, bool az, double val)
 
 int rotctl_send_az(observation_t *obs, double az)
 {
+	global_stats_t *stats;
+
+	stats = stats_get_instance();
+	stats->last_azimuth = az;
+
 	return rotctl_send(obs, true, az);
 }
 
 int rotctl_send_el(observation_t *obs, double el)
 {
+	global_stats_t *stats;
+
+	stats = stats_get_instance();
+	stats->last_elevation = el;
+
 	return rotctl_send(obs, false, el);
 }
 

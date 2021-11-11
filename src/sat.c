@@ -251,6 +251,7 @@ static void *sat_tracking_el(void *opt)
 		}
 
 		LOG_V("El: %.02f", el);
+
 		rotctl_send_el(obs, el);
 		usleep(time_delay);
 	} while (current_time < obs->active->next_los);
@@ -294,7 +295,11 @@ static void *sat_tracking_doppler(void *opt)
 
 		if (obs->cfg->dry_run == false) {
 			LOG_I("Doppler compensation: %f Hz\n", shift);
-			sdr_set_freq(obs->active->frequency + shift - 12000);
+			if (obs->active->modulation != MODULATION_FSK)
+				sdr_set_freq(obs->active->frequency + shift - 12000);
+			else
+				/** TODO: This is terrible and needs to be fixed */
+				sdr_set_freq(obs->active->frequency + shift);
 		}
 
 		usleep(time_delay);
@@ -319,8 +324,15 @@ static void *sat_scheduler(void *opt)
 	/** always valid */
 	stats = stats_get_instance();
 
+	stats->last_azimuth = rotctl_get_azimuth(obs);
+	stats->last_elevation = rotctl_get_elevation(obs);
+
+	LOG_I("Current azimuth: %f", stats->last_azimuth);
+	LOG_I("Current elevation: %f", stats->last_elevation);
+
 	LOG_I("Scheduler started");
 	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
+
 	while (obs->sch_terminate == false) {
 
 		time(&current_time);
@@ -349,6 +361,7 @@ static void *sat_scheduler(void *opt)
 
 						LOG_I("Parking antenna for the reception of %s", sat->name);
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
+
 						if (!sat->zero_transition)
 							rotctl_send_and_wait(obs, sat->aos_az, 0);
 						else
