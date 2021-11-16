@@ -636,6 +636,11 @@ static int rest_api_set_antenna_position(char *payload, char **reply_buf, const 
 		return -1;
 	}
 
+	if (stats->state != GSC_STATE_WAITING) {
+		*error = "Calibration, parking, or tracking in progress";
+		return -1;
+	}
+
 	LOG_V("Set antenna position REST API started");
 
 	LOG_V("Parsing JSON request...");
@@ -668,7 +673,7 @@ static int rest_api_set_antenna_position(char *payload, char **reply_buf, const 
 
 	LOG_I("Moving antenna to az: %f, el: %f", azimuth, elevation);
 
-	rotctl_send_and_wait(observation, azimuth, elevation);
+	rotctl_park_and_wait(observation, azimuth, elevation);
 	LOG_V("Set antenna position done");
 
 out:
@@ -690,6 +695,7 @@ static int rest_api_set_calibration(char *payload, char **reply_buf, const char 
 	struct json_object *calibrationObj;
 	struct json_object *valObj;
 	observation_t *observation;
+	global_stats_t *stats = stats_get_instance();
 
 	ret = 0;
 
@@ -697,6 +703,11 @@ static int rest_api_set_calibration(char *payload, char **reply_buf, const char 
 	observation = sat_get_observation();
 	if (!observation) {
 		*error = "No observation is set up";
+		return -1;
+	}
+
+	if (stats->state != GSC_STATE_WAITING) {
+		*error = "Calibration, parking, or tracking in progress";
 		return -1;
 	}
 

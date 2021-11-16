@@ -158,7 +158,7 @@ static double sat_fix_azimuth(double az)
 
 static void *sat_tracking_az(void *opt)
 {
-	int time_delay = 50000;
+	int time_delay = 1000000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -217,7 +217,7 @@ static void *sat_tracking_az(void *opt)
 
 static void *sat_tracking_el(void *opt)
 {
-	int time_delay = 50000;
+	int time_delay = 1000000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -368,9 +368,9 @@ static void *sat_scheduler(void *opt)
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 
 						if (!sat->zero_transition)
-							rotctl_send_and_wait(obs, sat->aos_az, 0);
+							rotctl_park_and_wait(obs, sat->aos_az, 0);
 						else
-							rotctl_send_and_wait(obs, sat->aos_az, 180);
+							rotctl_park_and_wait(obs, sat->aos_az, 180);
 
 						stats->state = GSC_STATE_WAITING;
 						LOG_I("Parking done");

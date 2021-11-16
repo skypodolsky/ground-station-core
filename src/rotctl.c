@@ -33,6 +33,116 @@
 #include "stats.h"
 #include "rotctl.h"
 
+pthread_t az_thread;
+pthread_t el_thread;
+
+typedef struct pos_t {
+	void *obs;
+	double val;
+	rot_type_t type;
+} pos_t;
+
+static int rotctl_flush_socket(observation_t *obs, rot_type_t type)
+{
+	int fd;
+	int rv;
+	int ret;
+	fd_set set;
+	char *rxbuf = NULL;
+	struct timeval timeout;
+
+	ret = 0;
+
+	if (obs == NULL)
+		return -1;
+
+	if (type == ROT_TYPE_NONE)
+		return -1;
+
+	/** TODO: replace with a relevant define */
+	rxbuf = calloc(8192, 1);
+	if (!rxbuf)
+		return -1;
+
+	fd = (type == ROT_TYPE_AZ) ? obs->cfg->cli.azimuth_conn_fd : obs->cfg->cli.elevation_conn_fd;
+
+	FD_ZERO(&set);
+	FD_SET(fd, &set);
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 10000;
+
+	rv = select(fd + 1, &set, NULL, NULL, &timeout);
+	if (rv > 0) {
+		recv(fd, rxbuf, 8192, 0);
+		printf("Flushing the old data\n");
+	}
+
+	LOG_V("rotctl_flush_socket() command done");
+
+	free(rxbuf);
+	return ret;
+}
+
+static int rotctl_send_recv_or_timeout(observation_t *obs, rot_type_t type, double val)
+{
+	int fd;
+	int rv;
+	int ret;
+	fd_set set;
+	char *rxbuf = NULL;
+	char val_buf[64] = { 0 };
+	struct timeval timeout;
+
+	ret = 0;
+
+	if (obs == NULL)
+		return -1;
+
+	if (type == ROT_TYPE_NONE)
+		return -1;
+
+	/** TODO: replace with a relevant define */
+	rxbuf = calloc(8192, 1);
+	if (!rxbuf)
+		return -1;
+
+	fd = (type == ROT_TYPE_AZ) ? obs->cfg->cli.azimuth_conn_fd : obs->cfg->cli.elevation_conn_fd;
+
+	rotctl_flush_socket(obs, type);
+
+	FD_ZERO(&set);
+	FD_SET(fd, &set);
+
+	timeout.tv_sec = 120;
+	timeout.tv_usec = 0;
+
+	snprintf(val_buf, sizeof(val_buf), "w " "%s" "%.02f\n", (type == ROT_TYPE_AZ) ? "A" : "E", val);
+	write(fd, val_buf, strlen(val_buf));
+
+	rv = select(fd + 1, &set, NULL, NULL, &timeout);
+
+	if(rv == -1) {
+		ret = -1;
+		goto out;
+	} else if(rv == 0) {
+		LOG_V("select() timeout");
+		ret = 0;
+		goto out;
+	} else {
+			/** TODO: replace with a relevant define */
+			int received = recv(fd, rxbuf, 8192, 0);
+			if (received < 0)
+				goto out;
+	}
+
+out:
+	LOG_V("rotctl_send_recv_or_timeout() command done");
+
+	free(rxbuf);
+	return ret;
+}
+
 int rotctl_open(observation_t *obs, rot_type_t type)
 {
 	int ret = 0;
@@ -177,8 +287,6 @@ float rotctl_get_azimuth(observation_t *obs)
 
 	snprintf(az_buf, sizeof(az_buf), "w A\n");
 
-	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
-
 	write(obs->cfg->cli.azimuth_conn_fd, az_buf, strlen(az_buf));
 	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
 
@@ -195,22 +303,27 @@ float rotctl_get_elevation(observation_t *obs)
 
 	snprintf(el_buf, sizeof(el_buf), "w E\n");
 
-	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
-
 	write(obs->cfg->cli.elevation_conn_fd, el_buf, strlen(el_buf));
 	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
 
 	return rotctl_extract_value(rxbuf);
 }
 
+static void *rotctl_park(void *opt)
+{
+	pos_t *pos = (pos_t *) opt;
 
-int rotctl_send_and_wait(observation_t *obs, double az, double el)
+	rotctl_send_recv_or_timeout(pos->obs, pos->type, pos->val);
+	return NULL;
+}
+
+int rotctl_park_and_wait(observation_t *obs, double az, double el)
 {
 	int ret;
-	char az_buf[32] = { 0 };
-	char el_buf[32] = { 0 };
-	char rxbuf[4096] = { 0 };
 	global_stats_t *stats;
+
+	pos_t pos_az = {obs, az, ROT_TYPE_AZ};
+	pos_t pos_el = {obs, el, ROT_TYPE_EL};
 
 	stats = stats_get_instance();
 	stats->last_azimuth = az;
@@ -221,39 +334,13 @@ int rotctl_send_and_wait(observation_t *obs, double az, double el)
 	if (obs == NULL)
 		return -1;
 
-	snprintf(az_buf, sizeof(az_buf), "w A%.02f\n", az);
-	snprintf(el_buf, sizeof(el_buf), "w E%.02f\n", el);
+	pthread_create(&az_thread, NULL, rotctl_park, &pos_az);
+	pthread_create(&el_thread, NULL, rotctl_park, &pos_el);
 
-	/* while (read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf)) > 0) */
-
-	write(obs->cfg->cli.azimuth_conn_fd, az_buf, strlen(az_buf));
-	write(obs->cfg->cli.elevation_conn_fd, el_buf, strlen(el_buf));
-	read(obs->cfg->cli.azimuth_conn_fd, rxbuf, sizeof(rxbuf));
-	read(obs->cfg->cli.elevation_conn_fd, rxbuf, sizeof(rxbuf));
+	pthread_join(az_thread, NULL);
+	pthread_join(el_thread, NULL);
 
 	LOG_V("rotctl_send_and_wait() command done");
-	return ret;
-}
-
-static int rotctl_send(observation_t *obs, bool az, double val)
-{
-	int fd;
-	int ret;
-	char val_buf[32] = { 0 };
-	char rxbuf[4096] = { 0 };
-
-	ret = 0;
-
-	if (obs == NULL)
-		return -1;
-
-	fd = az ? obs->cfg->cli.azimuth_conn_fd : obs->cfg->cli.elevation_conn_fd;
-	snprintf(val_buf, sizeof(val_buf), "w " "%s" "%.02f\n", az ? "A" : "E", val);
-
-	write(fd, val_buf, strlen(val_buf));
-	read(fd, rxbuf, sizeof(rxbuf));
-
-	LOG_V("rotctl_send() command done");
 	return ret;
 }
 
@@ -264,7 +351,7 @@ int rotctl_send_az(observation_t *obs, double az)
 	stats = stats_get_instance();
 	stats->last_azimuth = az;
 
-	return rotctl_send(obs, true, az);
+	return rotctl_send_recv_or_timeout(obs, ROT_TYPE_AZ, az);
 }
 
 int rotctl_send_el(observation_t *obs, double el)
@@ -274,6 +361,6 @@ int rotctl_send_el(observation_t *obs, double el)
 	stats = stats_get_instance();
 	stats->last_elevation = el;
 
-	return rotctl_send(obs, false, el);
+	return rotctl_send_recv_or_timeout(obs, ROT_TYPE_EL, el);
 }
 
