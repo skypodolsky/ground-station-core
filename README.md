@@ -1,15 +1,20 @@
 # Ground station core (GSC)
 
-All-in-one open-source utility for SDR-based satellite tracking
+All-in-one open-source utility for SDR-based satellite tracking. All you need to establish your own ground station with your equipment.
 
 
 ## Features
 
+- [x] Commercially proven
 - [x] Compatible with all common SDRs
 - [x] Compatible with all common antenna controllers
 - [x] Completely autonomous: doesn't need internet connection to operate
-- [x] Flexible: uses networking to operate with different parts
+- [x] Flexible: customize the digital signal processing with **GNU Radio**
+- [x] Flexible: customize needed actions before and after each pass
+- [x] Flexible: uses networking to operate with different SW parts
 - [x] All Unix-based systems supported
+- [x] Read-time status monitoring
+- [x] Email notification system
 - [x] JSON-based configuration
 - [x] Doppler compensation
 - [ ] Secure connection
