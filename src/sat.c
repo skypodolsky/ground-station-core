@@ -651,10 +651,6 @@ int sat_setup(satellite_t *sat)
 	int ret;
 	char tle1[MAX_TLE_LEN] = { 0 };
 	char tle2[MAX_TLE_LEN] = { 0 };
-	global_stats_t *stats;
-
-	/** always valid */
-	stats = stats_get_instance();
 
 	ret = 0;
 
@@ -670,7 +666,6 @@ int sat_setup(satellite_t *sat)
 	LOG_V("TLE1: [%s]", tle1);
 	LOG_V("TLE2: [%s]", tle2);
 
-	stats->satellites_scheduled++;
 	sat_predict(sat);
 
 out:

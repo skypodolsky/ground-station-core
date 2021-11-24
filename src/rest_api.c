@@ -353,6 +353,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 	struct json_object *jObj;
 	struct json_object *observationObj;
 	observation_t *observation;
+	global_stats_t *stats = stats_get_instance();
 
 	ret = 0;
 
@@ -376,6 +377,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 		goto out;
 	}
 
+	stats->satellites_scheduled = 0;
 	if ((observation = sat_setup_observation()) == NULL) {
 		ret = -1;
 		goto out;
@@ -594,6 +596,8 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 			}
 
 			LOG_V("satellite priority: [ %d ]", sat->priority);
+
+			stats->satellites_scheduled++;
 
 			if (sat_setup(sat) == -1) {
 				*error = "Satellite not found";
