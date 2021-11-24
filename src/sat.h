@@ -38,8 +38,19 @@
 typedef enum modulation_t {
 	MODULATION_BPSK,
 	MODULATION_AFSK,
-	MODULATION_FSK
+	MODULATION_FSK,
+	MODULATION_FM
 } modulation_t;
+
+typedef enum deframer_t {
+	DEFRAMER_AO_40,
+	DEFRAMER_GOMSPACE_U482C,
+	DEFRAMER_AX25,
+	DEFRAMER_FOSSASAT,
+	DEFRAMER_GOMSPACE_AX100_RS,
+	DEFRAMER_GOMSPACE_AX100_ASM_GOLAY,
+	DEFRAMER_DUMMY_FM
+} deframer_t;
 
 typedef struct observation_t observation_t;
 
@@ -48,8 +59,9 @@ typedef struct satellite_t {
 	char tle1[MAX_TLE_LEN];
 	char tle2[MAX_TLE_LEN];
 
-	/** modulation */
   	modulation_t modulation;
+	deframer_t deframer;
+
 	const char *network_addr;
 	int network_port;
 	int baudRate;
@@ -66,8 +78,7 @@ typedef struct satellite_t {
 	bool fskSubAudio;
 
 	/** deframing */
-	/** TODO: implement */
-	int syncword_threshold;
+	int syncwordThreshold;
 	bool shortFrames;
 	bool g3ruh;
 	bool crc16;
