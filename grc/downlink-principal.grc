@@ -1,0 +1,1537 @@
+options:
+  parameters:
+    author: ''
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: no_gui
+    hier_block_src_path: '.:'
+    id: fmDemod
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Leanspace + GNU Radio
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: deframer_CRC16_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: deframer_CRC16
+    section: deframer
+    type: bool
+    value: 'False'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2144, 12.0]
+    rotation: 0
+    state: true
+- name: deframer_G3RUH_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: deframer_G3RUH
+    section: deframer
+    type: bool
+    value: 'False'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1984, 12.0]
+    rotation: 0
+    state: true
+- name: deframer_Short_Frames_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: deframer_Short_Frames
+    section: deframer
+    type: bool
+    value: 'False'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1984, 156.0]
+    rotation: 0
+    state: true
+- name: deframer_Syncword_Threshold_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: deframer_Syncword_Threshold
+    section: deframer
+    type: int
+    value: '4'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2168, 156.0]
+    rotation: 0
+    state: enabled
+- name: fileNameRaw
+  id: variable
+  parameters:
+    comment: ''
+    value: main_Result_File_Prefix_Str + ".raw"
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 220.0]
+    rotation: 0
+    state: enabled
+- name: fileNameRes
+  id: variable
+  parameters:
+    comment: ''
+    value: main_Result_File_Prefix_Str + ".dat"
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 156.0]
+    rotation: 0
+    state: enabled
+- name: freqOffset
+  id: variable
+  parameters:
+    comment: ''
+    value: '11000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [280, 12.0]
+    rotation: 0
+    state: enabled
+- name: main_LPF_Cutoff_Freq_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: main_LPF_Cutoff_Freq
+    section: main
+    type: int
+    value: sampRate - 10000
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 156.0]
+    rotation: 0
+    state: true
+- name: main_Network_Stream_Address_Str
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: main_Network_Stream_Address
+    section: main
+    type: string
+    value: 127.0.0.1
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2376, 12.0]
+    rotation: 0
+    state: true
+- name: main_Network_Stream_Port_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: main_Network_Stream_Port
+    section: main
+    type: int
+    value: '8080'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2568, 12.0]
+    rotation: 0
+    state: true
+- name: main_Result_File_Prefix_Str
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: main_Result_File_Prefix
+    section: main
+    type: string
+    value: ERROR_PREFIX
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 12.0]
+    rotation: 0
+    state: true
+- name: modulation_AFSK_Audio_Carrier_Freq_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_AFSK_Audio_Carrier_Freq
+    section: modulation
+    type: int
+    value: '3600'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1256, 156.0]
+    rotation: 0
+    state: true
+- name: modulation_AFSK_Deviation_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_AFSK_Deviation
+    section: modulation
+    type: int
+    value: '-1200'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1424, 156.0]
+    rotation: 0
+    state: true
+- name: modulation_BPSK_Differential_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_BPSK_Differential
+    section: modulation
+    type: bool
+    value: 'True'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1600, 156.0]
+    rotation: 0
+    state: true
+- name: modulation_BPSK_Manchester_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_BPSK_Manchester
+    section: modulation
+    type: bool
+    value: 'False'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1784, 12.0]
+    rotation: 0
+    state: true
+- name: modulation_Baud_Rate_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_Baud_Rate
+    section: modulation
+    type: int
+    value: '9600'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1416, 12.0]
+    rotation: 0
+    state: true
+- name: modulation_Deframer_Type_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_Deframer_Type
+    section: modulation
+    type: int
+    value: '0'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1768, 156.0]
+    rotation: 0
+    state: true
+- name: modulation_FSK_Sub_Audio_Bool
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_FSK_Sub_Audio
+    section: modulation
+    type: bool
+    value: 'False'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1600, 12.0]
+    rotation: 0
+    state: true
+- name: modulation_Type_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: modulation_Type
+    section: modulation
+    type: int
+    value: '0'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1256, 12.0]
+    rotation: 0
+    state: true
+- name: sampRate
+  id: variable
+  parameters:
+    comment: ''
+    value: '480000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [192, 12.0]
+    rotation: 0
+    state: enabled
+- name: sdr_BB_Gain_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: sdr_BB_Gain
+    section: sdr
+    type: int
+    value: '40'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1080, 12.0]
+    rotation: 0
+    state: true
+- name: sdr_Freq_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: sdr_Freq
+    section: sdr
+    type: int
+    value: '145935000'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 12.0]
+    rotation: 0
+    state: true
+- name: sdr_IF_Gain_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: sdr_IF_Gain
+    section: sdr
+    type: int
+    value: '40'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [920, 12.0]
+    rotation: 0
+    state: true
+- name: sdr_LNA_Gain_Int
+  id: variable_config
+  parameters:
+    comment: ''
+    config_file: /home/stanislavb/sdr_prototypes/master/default
+    option: sdr_LNA_Gain
+    section: sdr
+    type: int
+    value: '14'
+    writeback: None
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [936, 156.0]
+    rotation: 0
+    state: true
+- name: analog_fm_deemph_0
+  id: analog_fm_deemph
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: sampRate / 10
+    tau: 75e-6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1556.0]
+    rotation: 0
+    state: true
+- name: analog_wfm_rcv_0
+  id: analog_wfm_rcv
+  parameters:
+    affinity: ''
+    alias: ''
+    audio_decimation: '1'
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    quad_rate: sampRate / 10
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [672, 1484.0]
+    rotation: 0
+    state: true
+- name: blocks_file_sink_0
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    comment: ''
+    file: fileNameRes
+    type: byte
+    unbuffered: 'False'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1912, 1308.0]
+    rotation: 0
+    state: true
+- name: blocks_file_sink_1
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    comment: ''
+    file: fileNameRaw
+    type: complex
+    unbuffered: 'False'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1400, 568.0]
+    rotation: 0
+    state: enabled
+- name: blocks_float_to_complex_0
+  id: blocks_float_to_complex
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1432, 864.0]
+    rotation: 0
+    state: enabled
+- name: blocks_message_debug_0
+  id: blocks_message_debug
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2320, 952.0]
+    rotation: 0
+    state: enabled
+- name: blocks_null_source_1
+  id: blocks_null_source
+  parameters:
+    affinity: ''
+    alias: ''
+    bus_structure_source: '[[0,],]'
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_outputs: '1'
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1288, 896.0]
+    rotation: 0
+    state: enabled
+- name: blocks_pdu_to_tagged_stream_0
+  id: blocks_pdu_to_tagged_stream
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    tag: data
+    type: byte
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1656, 1228.0]
+    rotation: 0
+    state: enabled
+- name: blocks_selector_0
+  id: blocks_selector
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: Modulation
+    enabled: 'True'
+    input_index: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '1'
+    num_outputs: '4'
+    output_index: modulation_Type_Int
+    showports: 'True'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1864, 640.0]
+    rotation: 0
+    state: enabled
+- name: blocks_selector_1
+  id: blocks_selector
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: For debugging purposes
+    enabled: 'True'
+    input_index: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    num_outputs: '1'
+    output_index: '0'
+    showports: 'True'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1632, 652.0]
+    rotation: 0
+    state: enabled
+- name: blocks_selector_2
+  id: blocks_selector
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    enabled: 'True'
+    input_index: modulation_Type_Int
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '4'
+    num_outputs: '7'
+    output_index: modulation_Deframer_Type_Int
+    showports: 'True'
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [968, 1240.0]
+    rotation: 0
+    state: true
+- name: blocks_selector_3
+  id: blocks_selector
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: DC blocker bypass
+    enabled: 'True'
+    input_index: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    num_outputs: '1'
+    output_index: '0'
+    showports: 'True'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [968, 536.0]
+    rotation: 0
+    state: enabled
+- name: blocks_udp_sink_0
+  id: blocks_udp_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    eof: 'True'
+    ipaddr: main_Network_Stream_Address_Str
+    port: main_Network_Stream_Port_Int
+    psize: '1472'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1912, 1204.0]
+    rotation: 0
+    state: enabled
+- name: blocks_wavfile_sink_0
+  id: blocks_wavfile_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bits_per_sample: '8'
+    comment: ''
+    file: fileNameRes
+    nchan: '1'
+    samp_rate: int(sampRate / 10)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1496, 1548.0]
+    rotation: 0
+    state: true
+- name: blocks_wavfile_source_0
+  id: blocks_wavfile_source
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    file: /home/stanislavb/satellite-recordings/gomx_1.wav
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    nchan: '1'
+    repeat: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1080, 852.0]
+    rotation: 0
+    state: enabled
+- name: dc_blocker_xx_0
+  id: dc_blocker_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    length: '32'
+    long_form: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: cc
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [784, 652.0]
+    rotation: 0
+    state: enabled
+- name: low_pass_filter_1
+  id: low_pass_filter
+  parameters:
+    affinity: ''
+    alias: ''
+    beta: '6.76'
+    comment: ''
+    cutoff_freq: main_LPF_Cutoff_Freq_Int
+    decim: '10'
+    gain: '1'
+    interp: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: sampRate
+    type: fir_filter_ccf
+    width: '1000'
+    win: firdes.WIN_HAMMING
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1184, 620.0]
+    rotation: 0
+    state: enabled
+- name: note_0
+  id: note
+  parameters:
+    alias: ''
+    comment: ''
+    note: File names config
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 324.0]
+    rotation: 0
+    state: true
+- name: note_0_0
+  id: note
+  parameters:
+    alias: ''
+    comment: ''
+    note: SDR config
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [864, 324.0]
+    rotation: 0
+    state: true
+- name: note_1
+  id: note
+  parameters:
+    alias: ''
+    comment: ''
+    note: Modulation config
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1528, 324.0]
+    rotation: 0
+    state: true
+- name: note_1_0
+  id: note
+  parameters:
+    alias: ''
+    comment: ''
+    note: Deframing config
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2096, 324.0]
+    rotation: 0
+    state: true
+- name: note_1_0_0
+  id: note
+  parameters:
+    alias: ''
+    comment: ''
+    note: Network config
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2496, 324.0]
+    rotation: 0
+    state: true
+- name: osmosdr_source_0
+  id: osmosdr_source
+  parameters:
+    affinity: ''
+    alias: ''
+    ant0: ''
+    ant1: ''
+    ant10: ''
+    ant11: ''
+    ant12: ''
+    ant13: ''
+    ant14: ''
+    ant15: ''
+    ant16: ''
+    ant17: ''
+    ant18: ''
+    ant19: ''
+    ant2: ''
+    ant20: ''
+    ant21: ''
+    ant22: ''
+    ant23: ''
+    ant24: ''
+    ant25: ''
+    ant26: ''
+    ant27: ''
+    ant28: ''
+    ant29: ''
+    ant3: ''
+    ant30: ''
+    ant31: ''
+    ant4: ''
+    ant5: ''
+    ant6: ''
+    ant7: ''
+    ant8: ''
+    ant9: ''
+    args: '""'
+    bb_gain0: sdr_BB_Gain_Int
+    bb_gain1: '20'
+    bb_gain10: '20'
+    bb_gain11: '20'
+    bb_gain12: '20'
+    bb_gain13: '20'
+    bb_gain14: '20'
+    bb_gain15: '20'
+    bb_gain16: '20'
+    bb_gain17: '20'
+    bb_gain18: '20'
+    bb_gain19: '20'
+    bb_gain2: '20'
+    bb_gain20: '20'
+    bb_gain21: '20'
+    bb_gain22: '20'
+    bb_gain23: '20'
+    bb_gain24: '20'
+    bb_gain25: '20'
+    bb_gain26: '20'
+    bb_gain27: '20'
+    bb_gain28: '20'
+    bb_gain29: '20'
+    bb_gain3: '20'
+    bb_gain30: '20'
+    bb_gain31: '20'
+    bb_gain4: '20'
+    bb_gain5: '20'
+    bb_gain6: '20'
+    bb_gain7: '20'
+    bb_gain8: '20'
+    bb_gain9: '20'
+    bw0: '0'
+    bw1: '0'
+    bw10: '0'
+    bw11: '0'
+    bw12: '0'
+    bw13: '0'
+    bw14: '0'
+    bw15: '0'
+    bw16: '0'
+    bw17: '0'
+    bw18: '0'
+    bw19: '0'
+    bw2: '0'
+    bw20: '0'
+    bw21: '0'
+    bw22: '0'
+    bw23: '0'
+    bw24: '0'
+    bw25: '0'
+    bw26: '0'
+    bw27: '0'
+    bw28: '0'
+    bw29: '0'
+    bw3: '0'
+    bw30: '0'
+    bw31: '0'
+    bw4: '0'
+    bw5: '0'
+    bw6: '0'
+    bw7: '0'
+    bw8: '0'
+    bw9: '0'
+    clock_source0: ''
+    clock_source1: ''
+    clock_source2: ''
+    clock_source3: ''
+    clock_source4: ''
+    clock_source5: ''
+    clock_source6: ''
+    clock_source7: ''
+    comment: ''
+    corr0: '0'
+    corr1: '0'
+    corr10: '0'
+    corr11: '0'
+    corr12: '0'
+    corr13: '0'
+    corr14: '0'
+    corr15: '0'
+    corr16: '0'
+    corr17: '0'
+    corr18: '0'
+    corr19: '0'
+    corr2: '0'
+    corr20: '0'
+    corr21: '0'
+    corr22: '0'
+    corr23: '0'
+    corr24: '0'
+    corr25: '0'
+    corr26: '0'
+    corr27: '0'
+    corr28: '0'
+    corr29: '0'
+    corr3: '0'
+    corr30: '0'
+    corr31: '0'
+    corr4: '0'
+    corr5: '0'
+    corr6: '0'
+    corr7: '0'
+    corr8: '0'
+    corr9: '0'
+    dc_offset_mode0: '0'
+    dc_offset_mode1: '0'
+    dc_offset_mode10: '0'
+    dc_offset_mode11: '0'
+    dc_offset_mode12: '0'
+    dc_offset_mode13: '0'
+    dc_offset_mode14: '0'
+    dc_offset_mode15: '0'
+    dc_offset_mode16: '0'
+    dc_offset_mode17: '0'
+    dc_offset_mode18: '0'
+    dc_offset_mode19: '0'
+    dc_offset_mode2: '0'
+    dc_offset_mode20: '0'
+    dc_offset_mode21: '0'
+    dc_offset_mode22: '0'
+    dc_offset_mode23: '0'
+    dc_offset_mode24: '0'
+    dc_offset_mode25: '0'
+    dc_offset_mode26: '0'
+    dc_offset_mode27: '0'
+    dc_offset_mode28: '0'
+    dc_offset_mode29: '0'
+    dc_offset_mode3: '0'
+    dc_offset_mode30: '0'
+    dc_offset_mode31: '0'
+    dc_offset_mode4: '0'
+    dc_offset_mode5: '0'
+    dc_offset_mode6: '0'
+    dc_offset_mode7: '0'
+    dc_offset_mode8: '0'
+    dc_offset_mode9: '0'
+    freq0: sdr_Freq_Int
+    freq1: 100e6
+    freq10: 100e6
+    freq11: 100e6
+    freq12: 100e6
+    freq13: 100e6
+    freq14: 100e6
+    freq15: 100e6
+    freq16: 100e6
+    freq17: 100e6
+    freq18: 100e6
+    freq19: 100e6
+    freq2: 100e6
+    freq20: 100e6
+    freq21: 100e6
+    freq22: 100e6
+    freq23: 100e6
+    freq24: 100e6
+    freq25: 100e6
+    freq26: 100e6
+    freq27: 100e6
+    freq28: 100e6
+    freq29: 100e6
+    freq3: 100e6
+    freq30: 100e6
+    freq31: 100e6
+    freq4: 100e6
+    freq5: 100e6
+    freq6: 100e6
+    freq7: 100e6
+    freq8: 100e6
+    freq9: 100e6
+    gain0: sdr_LNA_Gain_Int
+    gain1: '10'
+    gain10: '10'
+    gain11: '10'
+    gain12: '10'
+    gain13: '10'
+    gain14: '10'
+    gain15: '10'
+    gain16: '10'
+    gain17: '10'
+    gain18: '10'
+    gain19: '10'
+    gain2: '10'
+    gain20: '10'
+    gain21: '10'
+    gain22: '10'
+    gain23: '10'
+    gain24: '10'
+    gain25: '10'
+    gain26: '10'
+    gain27: '10'
+    gain28: '10'
+    gain29: '10'
+    gain3: '10'
+    gain30: '10'
+    gain31: '10'
+    gain4: '10'
+    gain5: '10'
+    gain6: '10'
+    gain7: '10'
+    gain8: '10'
+    gain9: '10'
+    gain_mode0: 'False'
+    gain_mode1: 'False'
+    gain_mode10: 'False'
+    gain_mode11: 'False'
+    gain_mode12: 'False'
+    gain_mode13: 'False'
+    gain_mode14: 'False'
+    gain_mode15: 'False'
+    gain_mode16: 'False'
+    gain_mode17: 'False'
+    gain_mode18: 'False'
+    gain_mode19: 'False'
+    gain_mode2: 'False'
+    gain_mode20: 'False'
+    gain_mode21: 'False'
+    gain_mode22: 'False'
+    gain_mode23: 'False'
+    gain_mode24: 'False'
+    gain_mode25: 'False'
+    gain_mode26: 'False'
+    gain_mode27: 'False'
+    gain_mode28: 'False'
+    gain_mode29: 'False'
+    gain_mode3: 'False'
+    gain_mode30: 'False'
+    gain_mode31: 'False'
+    gain_mode4: 'False'
+    gain_mode5: 'False'
+    gain_mode6: 'False'
+    gain_mode7: 'False'
+    gain_mode8: 'False'
+    gain_mode9: 'False'
+    if_gain0: sdr_IF_Gain_Int
+    if_gain1: '20'
+    if_gain10: '20'
+    if_gain11: '20'
+    if_gain12: '20'
+    if_gain13: '20'
+    if_gain14: '20'
+    if_gain15: '20'
+    if_gain16: '20'
+    if_gain17: '20'
+    if_gain18: '20'
+    if_gain19: '20'
+    if_gain2: '20'
+    if_gain20: '20'
+    if_gain21: '20'
+    if_gain22: '20'
+    if_gain23: '20'
+    if_gain24: '20'
+    if_gain25: '20'
+    if_gain26: '20'
+    if_gain27: '20'
+    if_gain28: '20'
+    if_gain29: '20'
+    if_gain3: '20'
+    if_gain30: '20'
+    if_gain31: '20'
+    if_gain4: '20'
+    if_gain5: '20'
+    if_gain6: '20'
+    if_gain7: '20'
+    if_gain8: '20'
+    if_gain9: '20'
+    iq_balance_mode0: '0'
+    iq_balance_mode1: '0'
+    iq_balance_mode10: '0'
+    iq_balance_mode11: '0'
+    iq_balance_mode12: '0'
+    iq_balance_mode13: '0'
+    iq_balance_mode14: '0'
+    iq_balance_mode15: '0'
+    iq_balance_mode16: '0'
+    iq_balance_mode17: '0'
+    iq_balance_mode18: '0'
+    iq_balance_mode19: '0'
+    iq_balance_mode2: '0'
+    iq_balance_mode20: '0'
+    iq_balance_mode21: '0'
+    iq_balance_mode22: '0'
+    iq_balance_mode23: '0'
+    iq_balance_mode24: '0'
+    iq_balance_mode25: '0'
+    iq_balance_mode26: '0'
+    iq_balance_mode27: '0'
+    iq_balance_mode28: '0'
+    iq_balance_mode29: '0'
+    iq_balance_mode3: '0'
+    iq_balance_mode30: '0'
+    iq_balance_mode31: '0'
+    iq_balance_mode4: '0'
+    iq_balance_mode5: '0'
+    iq_balance_mode6: '0'
+    iq_balance_mode7: '0'
+    iq_balance_mode8: '0'
+    iq_balance_mode9: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    nchan: '1'
+    num_mboards: '1'
+    sample_rate: sampRate
+    sync: sync
+    time_source0: ''
+    time_source1: ''
+    time_source2: ''
+    time_source3: ''
+    time_source4: ''
+    time_source5: ''
+    time_source6: ''
+    time_source7: ''
+    type: fc32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [456, 580.0]
+    rotation: 0
+    state: enabled
+- name: satellites_afsk_demodulator_0
+  id: satellites_afsk_demodulator
+  parameters:
+    af_carrier: modulation_AFSK_Audio_Carrier_Freq_Int
+    affinity: ''
+    alias: ''
+    baudrate: modulation_Baud_Rate_Int
+    comment: ''
+    deviation: modulation_AFSK_Deviation_Int
+    iq: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    samp_rate: sampRate / 10
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [680, 1308.0]
+    rotation: 0
+    state: enabled
+- name: satellites_ao40_fec_deframer_0
+  id: satellites_ao40_fec_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    crc: deframer_CRC16_Bool
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    short_frames: deframer_Short_Frames_Bool
+    threshold: deframer_Syncword_Threshold_Int
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1140.0]
+    rotation: 0
+    state: enabled
+- name: satellites_ax100_deframer_0
+  id: satellites_ax100_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    mode: '"RS"'
+    options: '""'
+    scrambler: '"CCSDS"'
+    threshold: deframer_Syncword_Threshold_Int
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1396.0]
+    rotation: 0
+    state: enabled
+- name: satellites_ax100_deframer_0_0
+  id: satellites_ax100_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    mode: '"ASM"'
+    options: '""'
+    scrambler: '"CCSDS"'
+    threshold: deframer_Syncword_Threshold_Int
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1468.0]
+    rotation: 0
+    state: enabled
+- name: satellites_ax25_deframer_1
+  id: satellites_ax25_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    g3ruh_scrambler: deframer_G3RUH_Bool
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1284.0]
+    rotation: 0
+    state: enabled
+- name: satellites_bpsk_demodulator_0
+  id: satellites_bpsk_demodulator
+  parameters:
+    affinity: ''
+    alias: ''
+    baudrate: modulation_Baud_Rate_Int
+    comment: ''
+    differential: modulation_BPSK_Differential_Bool
+    f_offset: freqOffset
+    iq: 'True'
+    manchester: modulation_BPSK_Manchester_Bool
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    samp_rate: sampRate / 10
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [648, 1196.0]
+    rotation: 0
+    state: enabled
+- name: satellites_fossasat_deframer_0
+  id: satellites_fossasat_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    threshold: deframer_Syncword_Threshold_Int
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1340.0]
+    rotation: 0
+    state: enabled
+- name: satellites_fsk_demodulator_0
+  id: satellites_fsk_demodulator
+  parameters:
+    affinity: ''
+    alias: ''
+    baudrate: modulation_Baud_Rate_Int
+    comment: ''
+    iq: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    samp_rate: sampRate / 10
+    subaudio: modulation_FSK_Sub_Audio_Bool
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [688, 1404.0]
+    rotation: 0
+    state: enabled
+- name: satellites_u482c_deframer_0
+  id: satellites_u482c_deframer
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    options: '""'
+    threshold: deframer_Syncword_Threshold_Int
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 1228.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_0
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: bpskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2088, 612.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_1
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: afskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2088, 668.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_2
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: fskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2088, 724.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_3
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: debug
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1656, 1428.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_6
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: analogFM
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2088, 780.0]
+    rotation: 0
+    state: true
+- name: virtual_source_0
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: bpskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [440, 1228.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_1
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: afskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [472, 1332.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_2
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: fskRaw
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [464, 1420.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_5
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: debug
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [2104, 1012.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_6
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: analogFM
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [432, 1492.0]
+    rotation: 0
+    state: true
+- name: xmlrpc_server_0
+  id: xmlrpc_server
+  parameters:
+    addr: localhost
+    alias: ''
+    comment: 'Doppler compensation
+
+
+      Receives an updated frequency
+
+      Update from GSC through XMLRPC'
+    port: '7777'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [192, 76.0]
+    rotation: 0
+    state: enabled
+
+connections:
+- [analog_fm_deemph_0, '0', blocks_wavfile_sink_0, '0']
+- [analog_wfm_rcv_0, '0', blocks_selector_2, '3']
+- [blocks_float_to_complex_0, '0', blocks_selector_1, '1']
+- [blocks_null_source_1, '0', blocks_float_to_complex_0, '1']
+- [blocks_pdu_to_tagged_stream_0, '0', blocks_file_sink_0, '0']
+- [blocks_pdu_to_tagged_stream_0, '0', blocks_udp_sink_0, '0']
+- [blocks_selector_0, '0', virtual_sink_0, '0']
+- [blocks_selector_0, '1', virtual_sink_1, '0']
+- [blocks_selector_0, '2', virtual_sink_2, '0']
+- [blocks_selector_0, '3', virtual_sink_6, '0']
+- [blocks_selector_1, '0', blocks_selector_0, '0']
+- [blocks_selector_2, '0', satellites_ao40_fec_deframer_0, '0']
+- [blocks_selector_2, '1', satellites_u482c_deframer_0, '0']
+- [blocks_selector_2, '2', satellites_ax25_deframer_1, '0']
+- [blocks_selector_2, '3', satellites_fossasat_deframer_0, '0']
+- [blocks_selector_2, '4', satellites_ax100_deframer_0, '0']
+- [blocks_selector_2, '5', satellites_ax100_deframer_0_0, '0']
+- [blocks_selector_2, '6', analog_fm_deemph_0, '0']
+- [blocks_selector_3, '0', low_pass_filter_1, '0']
+- [blocks_wavfile_source_0, '0', blocks_float_to_complex_0, '0']
+- [dc_blocker_xx_0, '0', blocks_selector_3, '1']
+- [low_pass_filter_1, '0', blocks_file_sink_1, '0']
+- [low_pass_filter_1, '0', blocks_selector_1, '0']
+- [osmosdr_source_0, '0', blocks_selector_3, '0']
+- [osmosdr_source_0, '0', dc_blocker_xx_0, '0']
+- [satellites_afsk_demodulator_0, '0', blocks_selector_2, '1']
+- [satellites_ao40_fec_deframer_0, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_ao40_fec_deframer_0, out, virtual_sink_3, '0']
+- [satellites_ax100_deframer_0, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_ax100_deframer_0, out, virtual_sink_3, '0']
+- [satellites_ax100_deframer_0_0, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_ax100_deframer_0_0, out, virtual_sink_3, '0']
+- [satellites_ax25_deframer_1, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_ax25_deframer_1, out, virtual_sink_3, '0']
+- [satellites_bpsk_demodulator_0, '0', blocks_selector_2, '0']
+- [satellites_fossasat_deframer_0, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_fossasat_deframer_0, out, virtual_sink_3, '0']
+- [satellites_fsk_demodulator_0, '0', blocks_selector_2, '2']
+- [satellites_u482c_deframer_0, out, blocks_pdu_to_tagged_stream_0, pdus]
+- [satellites_u482c_deframer_0, out, virtual_sink_3, '0']
+- [virtual_source_0, '0', satellites_bpsk_demodulator_0, '0']
+- [virtual_source_1, '0', satellites_afsk_demodulator_0, '0']
+- [virtual_source_2, '0', satellites_fsk_demodulator_0, '0']
+- [virtual_source_5, '0', blocks_message_debug_0, print_pdu]
+- [virtual_source_6, '0', analog_wfm_rcv_0, '0']
+
+metadata:
+  file_format: 1
