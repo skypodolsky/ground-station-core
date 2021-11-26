@@ -527,6 +527,23 @@ out:
 	return ret;
 }
 
+static bool sat_confirm_unique_priority(observation_t *obs, satellite_t *sat)
+{
+	satellite_t *iter;
+	int priority = sat->priority;
+
+	LIST_FOREACH(iter, &obs->satellites_list, entries) {
+		if (iter == sat)
+			continue;
+
+		if (iter->priority == priority) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 int sat_predict(satellite_t *sat)
 {
 	int ret;
@@ -669,6 +686,11 @@ int sat_setup(satellite_t *sat)
 
 	if (predict_is_geosynchronous(sat->orbital_elements)) {
 		ret = SAT_SET_RC_GEOSTATIONARY;
+		goto out;
+	}
+
+	if (!sat_confirm_unique_priority(sat->obs, sat)) {
+		ret = SAT_SET_RC_PRIORITY;
 		goto out;
 	}
 

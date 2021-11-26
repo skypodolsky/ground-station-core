@@ -710,6 +710,10 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 					*error = "Cannot predict satellite";
 					LOG_E("Rejected: error during prediction of the satellite");
 					break;
+				case SAT_SET_RC_PRIORITY:
+					*error = "Satellite priority is not unique";
+					LOG_E("Rejected: satellite priority is not unique");
+					break;
 				case SAT_SET_RC_UNKNOWN:
 					*error = "Unknown error";
 					LOG_E("Rejected: unknown reason");
