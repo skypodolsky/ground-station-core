@@ -587,6 +587,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 	if (satellite) {
 		int i;
+		int rc;
 
 		for (i = 0; i < json_object_array_length(satellite); i++) {
 			json_object *deframerObj;
@@ -619,7 +620,10 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 			LOG_V("satellite name: [ %s ]", satName);
 
-			sat->network_addr = strdup(json_get_string_by_key(satelliteObj, "network_addr"));
+			const char *network_addr = json_get_string_by_key(satelliteObj, "network_addr");
+			if (network_addr)
+				sat->network_addr = strdup(network_addr);
+
 			if (!sat->network_addr) {
 				*error = "'/observation/satellite/network_addr' string is not specified!";
 				ret = -1;
@@ -648,7 +652,6 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
-			/* if (sat->modulation != MODULATION_FM) { */
 			json_object_object_get_ex(satelliteObj, "deframer", &deframerObj);
 			if (!deframerObj) {
 				*error = "/observation/satellite/deframer object is required for analog modulation!";
@@ -660,7 +663,6 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				ret = -1;
 				goto out;
 			}
-			/* } */
 
 			strncpy(sat->name, satName, sizeof(sat->name) - 1);
 
@@ -670,7 +672,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
-			LOG_V("satellite frequency: [ %d ]", sat->frequency);
+			LOG_V("Satellite frequency: [ %d ]", sat->frequency);
 
 			if (!json_get_double_by_key(satelliteObj, "min_elevation", &sat->min_elevation)) {
 				*error = "'/observation/satellite/min_elevation' not specified";
@@ -678,7 +680,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
-			LOG_V("satellite min. elevation: [ %f ]", sat->min_elevation);
+			LOG_V("Satellite min. elevation: [ %f ]", sat->min_elevation);
 
 			if (!json_get_int_by_key(satelliteObj, "priority", &sat->priority)) {
 				*error = "'/observation/satellite/priority' not specified";
@@ -686,12 +688,39 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 				goto out;
 			}
 
-			LOG_V("satellite priority: [ %d ]", sat->priority);
+			LOG_V("Satellite priority: [ %d ]", sat->priority);
 
 			stats->satellites_scheduled++;
 
-			if (sat_setup(sat) == -1) {
-				*error = "Satellite not found";
+			rc = sat_setup(sat);
+
+			switch (rc) {
+				case SAT_SET_RC_OK:
+					LOG_I("Satellite %s set up successfully", sat->name);
+					break;
+				case SAT_SET_RC_NOT_FOUND:
+					*error = "Satellite not found";
+					LOG_E("Rejected: satellite not found");
+					break;
+				case SAT_SET_RC_GEOSTATIONARY:
+					*error = "Satellite is geostationary";
+					LOG_E("Rejected: the satellite is geostationary");
+					break;
+				case SAT_SET_RC_PREDICT:
+					*error = "Cannot predict satellite";
+					LOG_E("Rejected: error during prediction of the satellite");
+					break;
+				case SAT_SET_RC_UNKNOWN:
+					*error = "Unknown error";
+					LOG_E("Rejected: unknown reason");
+					break;
+				default:
+					/** do nothing */
+					break;
+			}
+
+			if (rc != SAT_SET_RC_OK) {
+				sat_clear_all(observation);
 				ret = -1;
 				goto out;
 			}

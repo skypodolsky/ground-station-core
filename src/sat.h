@@ -52,6 +52,14 @@ typedef enum deframer_t {
 	DEFRAMER_DUMMY_FM
 } deframer_t;
 
+typedef enum sat_set_rc {
+	SAT_SET_RC_OK,
+	SAT_SET_RC_NOT_FOUND,
+	SAT_SET_RC_GEOSTATIONARY,
+	SAT_SET_RC_PREDICT,
+	SAT_SET_RC_UNKNOWN
+} sat_set_rc;
+
 typedef struct observation_t observation_t;
 
 typedef struct satellite_t {
@@ -115,8 +123,10 @@ typedef struct observation_t {
 
 int sat_reschedule_all(void);
 int sat_setup(satellite_t *sat);
+int sat_clear_all(observation_t *obs);
 observation_t *sat_get_observation(void);
 observation_t *sat_setup_observation(void);
+void sat_destroy_observation(void);
 
 void sat_move_to_observation(void);
 satellite_t *sat_find_next(void);
