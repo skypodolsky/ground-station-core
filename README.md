@@ -4,7 +4,7 @@ All-in-one open-source utility for SDR-based satellite tracking. All you need to
 
 ## Wiki
 
-Find the detailed documentation on the [wiki](https://github.com/skypodolsky/ground-station-core.wiki.git)
+Find the detailed documentation on the [wiki](https://github.com/skypodolsky/ground-station-core/wiki)
 
 ## Features
 
