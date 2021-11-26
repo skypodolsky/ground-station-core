@@ -51,7 +51,7 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 		return -1;
 	}
 
-	snprintf(cfg_line, sizeof(cfg_line), 	"[sdr]\n"
+	snprintf(cfg_line, sizeof(cfg_line), "[sdr]\n"
 			"sdr_Freq=%d\n"
 			"sdr_IF_Gain=%d\n"
 			"sdr_BB_Gain=%d\n"
@@ -63,7 +63,7 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
 
-	snprintf(cfg_line, sizeof(cfg_line), 	"[main]\n"
+	snprintf(cfg_line, sizeof(cfg_line), "[main]\n"
 			"main_LPF_Cutoff_Freq=%d\n"
 			"main_Network_Stream_Address=%s\n"
 			"main_Network_Stream_Port=%d\n"
@@ -75,22 +75,20 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
 
-	snprintf(cfg_line, sizeof(cfg_line), 	"[modulation]\n"
+	snprintf(cfg_line, sizeof(cfg_line), "[modulation]\n"
 			"modulation_Type=%d\n"
-			"modulation_Baud_Rate=%d\n",
+			"modulation_Deframer_Type=%d\n",
 			sat->modulation,
-			sat->baudRate);
+			sat->deframer);
 
 	fwrite(cfg_line, strlen(cfg_line), 1, fd);
 
-	snprintf(cfg_line, sizeof(cfg_line), "modulation_Short_Frames=%d\n"
-										 "modulation_G3RUH=%d\n"
-										 "modulation_CRC16=%d\n",
-			sat->shortFrames,
-			sat->g3ruh,
-			sat->crc16);
+	if (sat->modulation != MODULATION_FM) {
+		snprintf(cfg_line, sizeof(cfg_line), "modulation_Baud_Rate=%d\n",
+				sat->baudRate);
 
-	fwrite(cfg_line, strlen(cfg_line), 1, fd);
+		fwrite(cfg_line, strlen(cfg_line), 1, fd);
+	}
 
 	switch (sat->modulation) {
 		case MODULATION_BPSK:
@@ -115,7 +113,49 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 
 			fwrite(cfg_line, strlen(cfg_line), 1, fd);
 			break;
+		case MODULATION_FM:
+			/** TODO: handle this */
+			break;
+		default:
+			LOG_E("Unsupported modulation type");
+			fclose(fd);
+			return -1;
 	};
+
+	snprintf(cfg_line, sizeof(cfg_line), "[deframer]\n");
+	fwrite(cfg_line, strlen(cfg_line), 1, fd);
+
+	switch (sat->deframer) {
+		case DEFRAMER_AO_40:
+			snprintf(cfg_line, sizeof(cfg_line), "deframer_Short_Frames=%d\n"
+					"deframer_CRC16=%d\n"
+					"deframer_Syncword_Threshold=%d\n",
+					sat->shortFrames,
+					sat->crc16,
+					sat->syncwordThreshold);
+			fwrite(cfg_line, strlen(cfg_line), 1, fd);
+			break;
+		case DEFRAMER_AX25:
+			snprintf(cfg_line, sizeof(cfg_line), "deframer_G3RUH_Bool=%d\n",
+					sat->g3ruh);
+			fwrite(cfg_line, strlen(cfg_line), 1, fd);
+			break;
+		case DEFRAMER_FOSSASAT:
+		case DEFRAMER_GOMSPACE_U482C:
+		case DEFRAMER_GOMSPACE_AX100_RS:
+		case DEFRAMER_GOMSPACE_AX100_ASM_GOLAY:
+			snprintf(cfg_line, sizeof(cfg_line), "deframer_Syncword_Threshold=%d\n",
+					sat->syncwordThreshold);
+			fwrite(cfg_line, strlen(cfg_line), 1, fd);
+			break;
+		case DEFRAMER_DUMMY_FM:
+			/** do nothing */
+			break;
+		default:
+			LOG_E("Unsupported deframer selected");
+			fclose(fd);
+			return -1;
+	}
 
 	fclose(fd);
 	return 0;

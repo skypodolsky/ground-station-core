@@ -38,8 +38,28 @@
 typedef enum modulation_t {
 	MODULATION_BPSK,
 	MODULATION_AFSK,
-	MODULATION_FSK
+	MODULATION_FSK,
+	MODULATION_FM
 } modulation_t;
+
+typedef enum deframer_t {
+	DEFRAMER_AO_40,
+	DEFRAMER_GOMSPACE_U482C,
+	DEFRAMER_AX25,
+	DEFRAMER_FOSSASAT,
+	DEFRAMER_GOMSPACE_AX100_RS,
+	DEFRAMER_GOMSPACE_AX100_ASM_GOLAY,
+	DEFRAMER_DUMMY_FM
+} deframer_t;
+
+typedef enum sat_set_rc {
+	SAT_SET_RC_OK,
+	SAT_SET_RC_NOT_FOUND,
+	SAT_SET_RC_GEOSTATIONARY,
+	SAT_SET_RC_PRIORITY,
+	SAT_SET_RC_PREDICT,
+	SAT_SET_RC_UNKNOWN
+} sat_set_rc;
 
 typedef struct observation_t observation_t;
 
@@ -48,8 +68,9 @@ typedef struct satellite_t {
 	char tle1[MAX_TLE_LEN];
 	char tle2[MAX_TLE_LEN];
 
-	/** modulation */
   	modulation_t modulation;
+	deframer_t deframer;
+
 	const char *network_addr;
 	int network_port;
 	int baudRate;
@@ -66,8 +87,7 @@ typedef struct satellite_t {
 	bool fskSubAudio;
 
 	/** deframing */
-	/** TODO: implement */
-	int syncword_threshold;
+	int syncwordThreshold;
 	bool shortFrames;
 	bool g3ruh;
 	bool crc16;
@@ -104,8 +124,10 @@ typedef struct observation_t {
 
 int sat_reschedule_all(void);
 int sat_setup(satellite_t *sat);
+int sat_clear_all(observation_t *obs);
 observation_t *sat_get_observation(void);
 observation_t *sat_setup_observation(void);
+void sat_destroy_observation(void);
 
 void sat_move_to_observation(void);
 satellite_t *sat_find_next(void);

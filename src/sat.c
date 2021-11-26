@@ -158,7 +158,7 @@ static double sat_fix_azimuth(double az)
 
 static void *sat_tracking_az(void *opt)
 {
-	int time_delay = 50000;
+	int time_delay = 1000000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -217,7 +217,7 @@ static void *sat_tracking_az(void *opt)
 
 static void *sat_tracking_el(void *opt)
 {
-	int time_delay = 50000;
+	int time_delay = 1000000;
 	time_t current_time;
 	observation_t *obs;
 	struct predict_position orbit;
@@ -295,7 +295,9 @@ static void *sat_tracking_doppler(void *opt)
 
 		if (obs->cfg->dry_run == false) {
 			LOG_I("Doppler compensation: %f Hz\n", shift);
-			if (obs->active->modulation != MODULATION_FSK)
+			if (obs->active->modulation != MODULATION_FSK &&
+					obs->active->modulation != MODULATION_FM)
+				/** TODO: fix this terrible frequency offset */
 				sdr_set_freq(obs->active->frequency + shift - 12000);
 			else
 				/** TODO: This is terrible and needs to be fixed */
@@ -331,7 +333,9 @@ static void *sat_scheduler(void *opt)
 	LOG_I("Current elevation: %f", stats->last_elevation);
 
 	LOG_I("Scheduler started");
-	fflush(stdout); /** just to avoid mixing up the output: it happens sometimes */
+	/** just to avoid mixing up the
+	 * output: it happens sometimes */
+	fflush(stdout);
 
 	/** the default state */
 	stats->state = GSC_STATE_WAITING;
@@ -368,9 +372,9 @@ static void *sat_scheduler(void *opt)
 						LOG_V("curr time = %ld, aos time = %ld", current_time, sat->next_aos);
 
 						if (!sat->zero_transition)
-							rotctl_send_and_wait(obs, sat->aos_az, 0);
+							rotctl_park_and_wait(obs, sat->aos_az, 0);
 						else
-							rotctl_send_and_wait(obs, sat->aos_az, 180);
+							rotctl_park_and_wait(obs, sat->aos_az, 180);
 
 						stats->state = GSC_STATE_WAITING;
 						LOG_I("Parking done");
@@ -523,6 +527,23 @@ out:
 	return ret;
 }
 
+static bool sat_confirm_unique_priority(observation_t *obs, satellite_t *sat)
+{
+	satellite_t *iter;
+	int priority = sat->priority;
+
+	LIST_FOREACH(iter, &obs->satellites_list, entries) {
+		if (iter == sat)
+			continue;
+
+		if (iter->priority == priority) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 int sat_predict(satellite_t *sat)
 {
 	int ret;
@@ -546,7 +567,7 @@ int sat_predict(satellite_t *sat)
 	if (sat->obs->sim_time)
 		current_time += sat->obs->sim_time;
 
-	LOG_I("SCHEDULE: current time=%ld", current_time);
+	LOG_V("SCHEDULE: current time=%ld", current_time);
 
 	predict_julian_date_t start_time = predict_to_julian(current_time);
 
@@ -651,14 +672,11 @@ int sat_setup(satellite_t *sat)
 	int ret;
 	char tle1[MAX_TLE_LEN] = { 0 };
 	char tle2[MAX_TLE_LEN] = { 0 };
-	global_stats_t *stats;
 
-	/** always valid */
-	stats = stats_get_instance();
+	ret = SAT_SET_RC_OK;
 
-	ret = 0;
-
-	if ((ret = sat_fetch_tle(sat->name, tle1, tle2)) == -1) {
+	if (sat_fetch_tle(sat->name, tle1, tle2) == -1) {
+		ret = SAT_SET_RC_NOT_FOUND;
 		goto out;
 	}
 
@@ -666,12 +684,24 @@ int sat_setup(satellite_t *sat)
 	strcpy(sat->tle2, tle2);
 	sat->orbital_elements = predict_parse_tle(sat->tle1, sat->tle2);
 
+	if (predict_is_geosynchronous(sat->orbital_elements)) {
+		ret = SAT_SET_RC_GEOSTATIONARY;
+		goto out;
+	}
+
+	if (!sat_confirm_unique_priority(sat->obs, sat)) {
+		ret = SAT_SET_RC_PRIORITY;
+		goto out;
+	}
+
 	LOG_I("Satellite found in the TLE list: [%s]", sat->name);
 	LOG_V("TLE1: [%s]", tle1);
 	LOG_V("TLE2: [%s]", tle2);
 
-	stats->satellites_scheduled++;
-	sat_predict(sat);
+	if (sat_predict(sat) == -1) {
+		ret = SAT_SET_RC_PREDICT;
+		goto out;
+	}
 
 out:
 	return ret;
@@ -713,7 +743,7 @@ static observation_t *sat_alloc_observation_data(void)
 	return obs;
 }
 
-static int sat_clear_all(observation_t *obs)
+int sat_clear_all(observation_t *obs)
 {
 	satellite_t *sat;
 	global_stats_t *stats;
@@ -727,7 +757,10 @@ static int sat_clear_all(observation_t *obs)
 	while (!LIST_EMPTY(&obs->satellites_list)) {
 		sat = LIST_FIRST(&obs->satellites_list);
 		predict_destroy_orbital_elements(sat->orbital_elements);
-		free((void *) sat->network_addr);
+
+		if (sat->network_addr)
+			free((void *) sat->network_addr);
+
 		LIST_REMOVE(sat, entries);
 		free(sat);
 	}
@@ -738,7 +771,7 @@ static int sat_clear_all(observation_t *obs)
 	memset(stats, 0, sizeof(global_stats_t));
 
 	predict_destroy_observer(obs->observer);
-	free(obs);
+	sat_destroy_observation();
 
 	return 0;
 }
@@ -760,6 +793,14 @@ observation_t *sat_setup_observation()
 observation_t *sat_get_observation(void)
 {
 	return _observation;
+}
+
+void sat_destroy_observation(void)
+{
+	if (_observation) {
+		free(_observation);
+		_observation = NULL;
+	}
 }
 
 int sat_reschedule_all()
