@@ -136,7 +136,7 @@ class fmDemod(gr.top_block):
         self._sdr_Freq_Int_config = configparser.ConfigParser()
         self._sdr_Freq_Int_config.read('/home/stanislavb/sdr_prototypes/master/default')
         try: sdr_Freq_Int = self._sdr_Freq_Int_config.getint('sdr', 'sdr_Freq')
-        except: sdr_Freq_Int = 145935000
+        except: sdr_Freq_Int = 103600000
         self.sdr_Freq_Int = sdr_Freq_Int
         self._sdr_BB_Gain_Int_config = configparser.ConfigParser()
         self._sdr_BB_Gain_Int_config.read('/home/stanislavb/sdr_prototypes/master/default')
@@ -146,7 +146,7 @@ class fmDemod(gr.top_block):
         self._modulation_Type_Int_config = configparser.ConfigParser()
         self._modulation_Type_Int_config.read('/home/stanislavb/sdr_prototypes/master/default')
         try: modulation_Type_Int = self._modulation_Type_Int_config.getint('modulation', 'modulation_Type')
-        except: modulation_Type_Int = 0
+        except: modulation_Type_Int = 3
         self.modulation_Type_Int = modulation_Type_Int
         self._modulation_FSK_Sub_Audio_Bool_config = configparser.ConfigParser()
         self._modulation_FSK_Sub_Audio_Bool_config.read('/home/stanislavb/sdr_prototypes/master/default')
@@ -156,7 +156,7 @@ class fmDemod(gr.top_block):
         self._modulation_Deframer_Type_Int_config = configparser.ConfigParser()
         self._modulation_Deframer_Type_Int_config.read('/home/stanislavb/sdr_prototypes/master/default')
         try: modulation_Deframer_Type_Int = self._modulation_Deframer_Type_Int_config.getint('modulation', 'modulation_Deframer_Type')
-        except: modulation_Deframer_Type_Int = 0
+        except: modulation_Deframer_Type_Int = 6
         self.modulation_Deframer_Type_Int = modulation_Deframer_Type_Int
         self._modulation_Baud_Rate_Int_config = configparser.ConfigParser()
         self._modulation_Baud_Rate_Int_config.read('/home/stanislavb/sdr_prototypes/master/default')
@@ -246,8 +246,8 @@ class fmDemod(gr.top_block):
         self.osmosdr_source_0.set_sample_rate(sampRate)
         self.osmosdr_source_0.set_center_freq(sdr_Freq_Int, 0)
         self.osmosdr_source_0.set_freq_corr(0, 0)
-        self.osmosdr_source_0.set_dc_offset_mode(0, 0)
-        self.osmosdr_source_0.set_iq_balance_mode(0, 0)
+        self.osmosdr_source_0.set_dc_offset_mode(2, 0)
+        self.osmosdr_source_0.set_iq_balance_mode(2, 0)
         self.osmosdr_source_0.set_gain_mode(False, 0)
         self.osmosdr_source_0.set_gain(sdr_LNA_Gain_Int, 0)
         self.osmosdr_source_0.set_if_gain(sdr_IF_Gain_Int, 0)
@@ -255,19 +255,21 @@ class fmDemod(gr.top_block):
         self.osmosdr_source_0.set_antenna('', 0)
         self.osmosdr_source_0.set_bandwidth(0, 0)
         self.low_pass_filter_1 = filter.fir_filter_ccf(
-            10,
+            10 if modulation_Type_Int != 3 else 1,
             firdes.low_pass(
                 1,
                 sampRate,
                 main_LPF_Cutoff_Freq_Int,
-                1000,
+                3000,
                 firdes.WIN_HAMMING,
                 6.76))
         self.dc_blocker_xx_0 = filter.dc_blocker_cc(32, True)
         self.blocks_wavfile_source_0 = blocks.wavfile_source('/home/stanislavb/satellite-recordings/gomx_1.wav', True)
-        self.blocks_wavfile_sink_0 = blocks.wavfile_sink(fileNameRes, 1, int(sampRate / 10), 8)
+        self.blocks_wavfile_sink_0 = blocks.wavfile_sink(fileNameRes, 1, int(sampRate / 10), 16)
         self.blocks_udp_sink_0 = blocks.udp_sink(gr.sizeof_char*1, main_Network_Stream_Address_Str, main_Network_Stream_Port_Int, 1472, True)
-        self.blocks_selector_3 = blocks.selector(gr.sizeof_gr_complex*1,0,0)
+        self.blocks_selector_4 = blocks.selector(gr.sizeof_gr_complex*1,0,1)
+        self.blocks_selector_4.set_enabled(True)
+        self.blocks_selector_3 = blocks.selector(gr.sizeof_gr_complex*1,1,0)
         self.blocks_selector_3.set_enabled(True)
         self.blocks_selector_2 = blocks.selector(gr.sizeof_float*1,modulation_Type_Int,modulation_Deframer_Type_Int)
         self.blocks_selector_2.set_enabled(True)
@@ -277,17 +279,22 @@ class fmDemod(gr.top_block):
         self.blocks_selector_0.set_enabled(True)
         self.blocks_pdu_to_tagged_stream_0 = blocks.pdu_to_tagged_stream(blocks.byte_t, 'data')
         self.blocks_null_source_1 = blocks.null_source(gr.sizeof_float*1)
+        self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_gr_complex*1)
         self.blocks_message_debug_0 = blocks.message_debug()
         self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
         self.blocks_file_sink_1 = blocks.file_sink(gr.sizeof_gr_complex*1, fileNameRaw, False)
         self.blocks_file_sink_1.set_unbuffered(False)
         self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_char*1, fileNameRes, False)
         self.blocks_file_sink_0.set_unbuffered(False)
-        self.analog_wfm_rcv_0 = analog.wfm_rcv(
-        	quad_rate=sampRate / 10,
-        	audio_decimation=1,
+        self.analog_fm_demod_cf_0 = analog.fm_demod_cf(
+        	channel_rate=sampRate,
+        	audio_decim=10,
+        	deviation=17000,
+        	audio_pass=2400,
+        	audio_stop=3400,
+        	gain=1.0,
+        	tau=75e-6,
         )
-        self.analog_fm_deemph_0 = analog.fm_deemph(fs=sampRate / 10, tau=75e-6)
 
 
         ##################################################
@@ -305,18 +312,17 @@ class fmDemod(gr.top_block):
         self.msg_connect((self.satellites_fossasat_deframer_0, 'out'), (self.blocks_pdu_to_tagged_stream_0, 'pdus'))
         self.msg_connect((self.satellites_u482c_deframer_0, 'out'), (self.blocks_message_debug_0, 'print_pdu'))
         self.msg_connect((self.satellites_u482c_deframer_0, 'out'), (self.blocks_pdu_to_tagged_stream_0, 'pdus'))
-        self.connect((self.analog_fm_deemph_0, 0), (self.blocks_wavfile_sink_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_selector_2, 3))
+        self.connect((self.analog_fm_demod_cf_0, 0), (self.blocks_selector_2, 3))
         self.connect((self.blocks_float_to_complex_0, 0), (self.blocks_selector_1, 1))
         self.connect((self.blocks_null_source_1, 0), (self.blocks_float_to_complex_0, 1))
         self.connect((self.blocks_pdu_to_tagged_stream_0, 0), (self.blocks_file_sink_0, 0))
         self.connect((self.blocks_pdu_to_tagged_stream_0, 0), (self.blocks_udp_sink_0, 0))
-        self.connect((self.blocks_selector_0, 3), (self.analog_wfm_rcv_0, 0))
+        self.connect((self.blocks_selector_0, 3), (self.analog_fm_demod_cf_0, 0))
         self.connect((self.blocks_selector_0, 1), (self.satellites_afsk_demodulator_0, 0))
         self.connect((self.blocks_selector_0, 0), (self.satellites_bpsk_demodulator_0, 0))
         self.connect((self.blocks_selector_0, 2), (self.satellites_fsk_demodulator_0, 0))
         self.connect((self.blocks_selector_1, 0), (self.blocks_selector_0, 0))
-        self.connect((self.blocks_selector_2, 6), (self.analog_fm_deemph_0, 0))
+        self.connect((self.blocks_selector_2, 6), (self.blocks_wavfile_sink_0, 0))
         self.connect((self.blocks_selector_2, 0), (self.satellites_ao40_fec_deframer_0, 0))
         self.connect((self.blocks_selector_2, 4), (self.satellites_ax100_deframer_0, 0))
         self.connect((self.blocks_selector_2, 5), (self.satellites_ax100_deframer_0_0, 0))
@@ -324,10 +330,12 @@ class fmDemod(gr.top_block):
         self.connect((self.blocks_selector_2, 3), (self.satellites_fossasat_deframer_0, 0))
         self.connect((self.blocks_selector_2, 1), (self.satellites_u482c_deframer_0, 0))
         self.connect((self.blocks_selector_3, 0), (self.low_pass_filter_1, 0))
+        self.connect((self.blocks_selector_4, 1), (self.blocks_file_sink_1, 0))
+        self.connect((self.blocks_selector_4, 0), (self.blocks_null_sink_0, 0))
         self.connect((self.blocks_wavfile_source_0, 0), (self.blocks_float_to_complex_0, 0))
         self.connect((self.dc_blocker_xx_0, 0), (self.blocks_selector_3, 1))
-        self.connect((self.low_pass_filter_1, 0), (self.blocks_file_sink_1, 0))
         self.connect((self.low_pass_filter_1, 0), (self.blocks_selector_1, 0))
+        self.connect((self.low_pass_filter_1, 0), (self.blocks_selector_4, 0))
         self.connect((self.osmosdr_source_0, 0), (self.blocks_selector_3, 0))
         self.connect((self.osmosdr_source_0, 0), (self.dc_blocker_xx_0, 0))
         self.connect((self.satellites_afsk_demodulator_0, 0), (self.blocks_selector_2, 1))
@@ -341,7 +349,7 @@ class fmDemod(gr.top_block):
     def set_sampRate(self, sampRate):
         self.sampRate = sampRate
         self.set_main_LPF_Cutoff_Freq_Int(self.sampRate - 10000)
-        self.low_pass_filter_1.set_taps(firdes.low_pass(1, self.sampRate, self.main_LPF_Cutoff_Freq_Int, 1000, firdes.WIN_HAMMING, 6.76))
+        self.low_pass_filter_1.set_taps(firdes.low_pass(1, self.sampRate, self.main_LPF_Cutoff_Freq_Int, 3000, firdes.WIN_HAMMING, 6.76))
         self.osmosdr_source_0.set_sample_rate(self.sampRate)
 
     def get_main_Result_File_Prefix_Str(self):
@@ -448,7 +456,7 @@ class fmDemod(gr.top_block):
 
     def set_main_LPF_Cutoff_Freq_Int(self, main_LPF_Cutoff_Freq_Int):
         self.main_LPF_Cutoff_Freq_Int = main_LPF_Cutoff_Freq_Int
-        self.low_pass_filter_1.set_taps(firdes.low_pass(1, self.sampRate, self.main_LPF_Cutoff_Freq_Int, 1000, firdes.WIN_HAMMING, 6.76))
+        self.low_pass_filter_1.set_taps(firdes.low_pass(1, self.sampRate, self.main_LPF_Cutoff_Freq_Int, 3000, firdes.WIN_HAMMING, 6.76))
 
     def get_freqOffset(self):
         return self.freqOffset
