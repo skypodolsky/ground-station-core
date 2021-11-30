@@ -138,14 +138,43 @@ def action_pre_doit(args):
     action_ant_select(args)
     pass
 
+def handle_noaa_apt_satellite(f):
+    files = []
+    today = date.today()
+
+    enhancements = [ 'ZA', 'MCIR' ]
+
+    f_new = f.split('.')[0] + '.wav'
+    os.system('sox ' + f + ' -r 11025 ' + f_new)
+    print('Resampled to 11025 sps')
+
+    for e in enhancements:
+        f_image = f.split('.')[0] + '_' + e + '.jpg'
+        files.append(f_image)
+        os.system('wxtoimg -o -e ' + e + ' ' + f_new + ' ' + f_image)
+
+    send_email_notification('/etc/gsc/email.cfg', files)
+
+    os.system('mv -vf NOAA*GMT.raw ' + RESULTS_PREFIX + str(today) + '/')
+    os.system('mv -vf NOAA*.jpg ' + RESULTS_PREFIX + str(today) + '/')
+    os.system('rm -vf ' + f_new)
+    os.system('rm -vf ' + f)
+
 # put files on FTP, decode, send notifications
 def action_post_doit(args):
     print('== post doit ==')
     today = date.today()
     files = glob.glob('*GMT.dat')
-    send_email_notification('/etc/gsc/email.cfg', files)
-    os.system('mv -vf *GMT.dat ' + RESULTS_PREFIX + str(today) + '/')
-    os.system('mv -vf *GMT.raw ' + RESULTS_PREFIX + str(today) + '/')
+
+
+
+    for f in files:
+        if 'NOAA' in f:
+            handle_noaa_apt_satellite(f)
+        else:
+            send_email_notification('/etc/gsc/email.cfg', files)
+            os.system('mv -vf *GMT.dat ' + RESULTS_PREFIX + str(today) + '/')
+            os.system('mv -vf *GMT.raw ' + RESULTS_PREFIX + str(today) + '/')
     return
 
 actions = {
