@@ -22,7 +22,9 @@
 
 #include <stdbool.h>
 #include <libconfig.h>
+#ifdef  __linux__
 #include <linux/limits.h>
+#endif
 
 #define DEF_LISTEN_PORT		25565
 #define DEF_CONFIG_NAME		"default.cfg"
