@@ -94,7 +94,7 @@ typedef struct satellite_t {
 
 	double min_elevation;
 	double max_elevation;
-  	int frequency;
+  	uint64_t frequency;		/* uint64_t needed because QO-100 Es'Hail2 runs at 10Ghz and that's more than 32 bits */
   	int bandwidth;
   	int priority;
 	time_t next_aos;

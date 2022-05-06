@@ -52,11 +52,11 @@ int sdr_prepare_config(cfg_t *cfg, satellite_t *sat, const char *filename)
 	}
 
 	snprintf(cfg_line, sizeof(cfg_line), "[sdr]\n"
-			"sdr_Freq=%d\n"
+			"sdr_Freq=%llu\n"
 			"sdr_IF_Gain=%d\n"
 			"sdr_BB_Gain=%d\n"
 			"sdr_LNA_Gain=%d\n",
-			sat->frequency,
+			(long long)sat->frequency,
 			cfg->if_gain,
 			cfg->bb_gain,
 			cfg->lna_gain);
