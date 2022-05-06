@@ -65,6 +65,7 @@ int main(int argc, char **argv)
 	int options;
 	int option_index;
 	config_t file_cfg;
+	int verbose_level = 0;	/* presently unused */
 
 	/** internal gsc config */
 	cfg = alloc_cfg();
@@ -95,6 +96,9 @@ int main(int argc, char **argv)
 		}
 
 		switch (options) {
+			case 'v':
+				verbose_level = atoi(optarg);
+				break;
 			case 'c':
 				cfg->dry_run = true;
 				break;
@@ -120,8 +124,10 @@ int main(int argc, char **argv)
 		goto err;
 	}
 
-	if (sig_register() == -1)
-		return -1;
+	if (sig_register() == -1) {
+		fprintf(stderr, "signal() register failed\n");
+		goto err;
+	}
 
 	LOG_V("Dry run:              %s", !!cfg->dry_run ? "true" : "false");
 	LOG_V("Latitude:             %f", cfg->latitude);
