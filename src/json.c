@@ -67,6 +67,25 @@ bool json_get_int_by_key(json_object *parent, const char *key, int *ret)
   return true;
 }
 
+bool json_get_uint64_by_key(json_object *parent, const char *key, uint64_t *ret)
+{
+  json_object *obj;
+
+  if (!parent || !key || !ret) {
+    return false;
+  }
+
+  if (!json_object_object_get_ex(parent, key, &obj)) {
+    return false;
+  }
+
+  if (json_object_get_type(obj) != json_type_int)
+    return false;
+
+  *ret = json_object_get_uint64(obj);
+  return true;
+}
+
 bool json_get_double_by_key(json_object *parent, const char *key, double *ret)
 {
   json_object *obj;
