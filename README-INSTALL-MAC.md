@@ -24,7 +24,7 @@ This is handled within the `CMakeLists.txt` file.
 
 Install these projects by following their install instructions (i.e. their README files)
 
-* https://github.com/la1k/libpredict
+* https://github.com/la1k/libpredict (see https://github.com/la1k/libpredict/issues/110 if it doesn't compile)
 * https://github.com/json-c/json-c
 
 Both can be installed in their default locations.
