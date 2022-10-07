@@ -666,7 +666,7 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 
 			strncpy(sat->name, satName, sizeof(sat->name) - 1);
 
-			if (!json_get_int_by_key(satelliteObj, "frequency", &sat->frequency)) {
+			if (!json_get_uint64_by_key(satelliteObj, "frequency", &sat->frequency)) {
 				*error = "'/observation/satellite/frequency' not specified";
 				ret = -1;
 				goto out;
@@ -675,9 +675,14 @@ static int rest_api_set_observation(char *payload, char **reply_buf, const char 
 			LOG_V("Satellite frequency: [ %d ]", sat->frequency);
 
 			if (!json_get_double_by_key(satelliteObj, "min_elevation", &sat->min_elevation)) {
-				*error = "'/observation/satellite/min_elevation' not specified";
-				ret = -1;
-				goto out;
+				/* Could be just an int */
+				int temp_min_elevation;
+				if (!json_get_int_by_key(satelliteObj, "min_elevation", &temp_min_elevation)) {
+					*error = "'/observation/satellite/min_elevation' not specified";
+					ret = -1;
+					goto out;
+				}
+				sat->min_elevation = (double)temp_min_elevation;
 			}
 
 			LOG_V("Satellite min. elevation: [ %f ]", sat->min_elevation);

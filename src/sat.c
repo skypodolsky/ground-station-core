@@ -467,7 +467,7 @@ static int sat_fetch_tle(const char *name, char *tle1, char *tle2)
 {
 	int ret;
 	int size;
-	FILE *fd;
+	FILE *fd = NULL;
 	char *buf;
 	bool found;
 

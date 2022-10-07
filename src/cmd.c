@@ -22,7 +22,7 @@ int pre_doit(observation_t *obs)
 	char freq[32] = { 0 };
 
 	if (obs->active)
-		snprintf(freq, sizeof(freq), "%d", obs->active->frequency);
+		snprintf(freq, sizeof(freq), "%llu", (long long)obs->active->frequency);
 
 	char *args[] = { DEF_CONF_PYTHON, (char *) obs->cfg->cmd_script, "pre_doit", freq, NULL };
 	return request_cmd(DEF_CONF_PYTHON, args);

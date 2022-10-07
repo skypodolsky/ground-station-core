@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
+if(APPLE)
+# Homebrew's preferred prefix is /usr/local for macOS Intel & /opt/homebrew for Apple Silicon
+include_directories(AFTER "/opt/homebrew/include" "/usr/local/include")
+endif(APPLE)
 set(TARGET_UTIL gsc)
 
 project(${TARGET_UTIL})
